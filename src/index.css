@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* Barangay Palma-Urbano Design System */
+
+@layer base {
+  :root {
+    /* Main Background - Soft warm gray-blue (easy on eyes) */
+    --background: 210 25% 95%;
+    --foreground: 220 25% 20%;
+
+    /* Card/Surface colors - Clean white with subtle warmth */
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 20%;
+
+    /* Primary - Softer Royal Blue */
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Soft Teal (easier on eyes) */
+    --secondary: 170 50% 40%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted - Gentle gray */
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Accent - Soft Teal */
+    --accent: 170 45% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors - Softer variants */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 145 55% 42%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 40 85% 55%;
+    --warning-foreground: 220 25% 20%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 220 70% 50%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar - Softer Teal theme */
+    --sidebar-background: 170 50% 40%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 220 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 170 45% 35%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 170 40% 50%;
+    --sidebar-ring: 220 70% 60%;
+  }
+
+  .dark {
+    --background: 220 40% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 40% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 40% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 227 83% 60%;
+    --primary-foreground: 220 40% 10%;
+
+    --secondary: 167 92% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 167 92% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 40%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 213 27% 84%;
+
+    --sidebar-background: 220 40% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Poppins', sans-serif;
+  }
+}
