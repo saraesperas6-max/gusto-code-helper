@@ -19,6 +19,7 @@ import Topbar from '@/components/Topbar';
 import { useData } from '@/context/DataContext';
 import { CertificateRequest, CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const CERTIFICATE_TYPES: CertificateType[] = [
   'Barangay Clearance',
@@ -31,10 +32,12 @@ const CERTIFICATE_TYPES: CertificateType[] = [
 
 const RequestsPage: React.FC = () => {
   const { requests, residents, addRequest, updateRequestStatus } = useData();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<CertificateRequest | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   
   const [selectedResident, setSelectedResident] = useState('');
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
@@ -50,25 +53,40 @@ const RequestsPage: React.FC = () => {
 
   const activeResidents = residents.filter((r) => r.status === 'Active');
 
-  const handleNewRequest = (e: React.FormEvent) => {
+  const handleNewRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     const resident = residents.find((r) => r.id === selectedResident);
     if (!resident || !certificateType) return;
 
-    addRequest({
-      residentId: resident.id,
-      residentName: `${resident.firstName} ${resident.middleName || ''} ${resident.lastName}`.trim(),
-      certificateType: certificateType as CertificateType,
-      purpose,
-      notes: notes || undefined,
-      status: markAsApproved ? 'Approved' : 'Pending',
-    });
+    setLoading(true);
+    try {
+      await addRequest({
+        residentId: resident.id,
+        residentName: `${resident.firstName} ${resident.middleName || ''} ${resident.lastName}`.trim(),
+        certificateType: certificateType as CertificateType,
+        purpose,
+        notes: notes || undefined,
+        status: markAsApproved ? 'Approved' : 'Pending',
+      });
+      setSelectedResident('');
+      setCertificateType('');
+      setPurpose('');
+      setNotes('');
+      setIsNewRequestOpen(false);
+      toast({ title: 'Request created successfully' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setLoading(false);
+  };
 
-    setSelectedResident('');
-    setCertificateType('');
-    setPurpose('');
-    setNotes('');
-    setIsNewRequestOpen(false);
+  const handleStatusUpdate = async (id: string, status: RequestStatus) => {
+    try {
+      await updateRequestStatus(id, status);
+      toast({ title: `Request ${status.toLowerCase()}` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
   };
 
   const getStatusBadge = (status: RequestStatus) => {
@@ -191,10 +209,8 @@ const RequestsPage: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsNewRequestOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Submit Request</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsNewRequestOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit Request'}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -224,11 +240,7 @@ const RequestsPage: React.FC = () => {
                     <div className="flex items-center justify-center gap-2">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedRequest(request)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
@@ -290,7 +302,7 @@ const RequestsPage: React.FC = () => {
                                 <div className="flex justify-center gap-4 pt-4">
                                   <Button 
                                     onClick={() => {
-                                      updateRequestStatus(selectedRequest.id, 'Approved');
+                                      handleStatusUpdate(selectedRequest.id, 'Approved');
                                       setSelectedRequest({ ...selectedRequest, status: 'Approved' });
                                     }}
                                     className="bg-success hover:bg-success/90"
@@ -301,7 +313,7 @@ const RequestsPage: React.FC = () => {
                                   <Button 
                                     variant="destructive"
                                     onClick={() => {
-                                      updateRequestStatus(selectedRequest.id, 'Denied');
+                                      handleStatusUpdate(selectedRequest.id, 'Denied');
                                       setSelectedRequest({ ...selectedRequest, status: 'Denied' });
                                     }}
                                   >
@@ -319,14 +331,14 @@ const RequestsPage: React.FC = () => {
                           <Button 
                             size="sm" 
                             className="bg-success hover:bg-success/90"
-                            onClick={() => updateRequestStatus(request.id, 'Approved')}
+                            onClick={() => handleStatusUpdate(request.id, 'Approved')}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
                           <Button 
                             size="sm" 
                             variant="destructive"
-                            onClick={() => updateRequestStatus(request.id, 'Denied')}
+                            onClick={() => handleStatusUpdate(request.id, 'Denied')}
                           >
                             <X className="h-4 w-4" />
                           </Button>

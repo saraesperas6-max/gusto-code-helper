@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
-import { CertificateType, Resident, RequestStatus } from '@/types/barangay';
+import { CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
 import logo from '@/assets/logo.png';
 
@@ -43,7 +43,7 @@ const CERTIFICATE_DESCRIPTIONS: Record<string, string> = {
 
 const ResidentPortal: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addRequest, getResidentRequests } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,13 +51,15 @@ const ResidentPortal: React.FC = () => {
   const [purpose, setPurpose] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<{ file: File; preview: string }[]>([]);
   const [isSampleOpen, setIsSampleOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const resident = currentUser as Resident;
-  const residentName = `${resident.firstName} ${resident.middleName || ''} ${resident.lastName}`.trim();
-  const myRequests = getResidentRequests(resident.id);
+  if (!profile || !user) return null;
 
-  const handleLogout = () => {
-    logout();
+  const residentName = `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim();
+  const myRequests = getResidentRequests(user.id);
+
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -79,24 +81,30 @@ const ResidentPortal: React.FC = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmitRequest = (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!certificateType) return;
 
-    addRequest({
-      residentId: resident.id,
-      residentName,
-      certificateType: certificateType as CertificateType,
-      purpose,
-      status: 'Pending',
-      validIdFile: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.file.name).join(', ') : undefined,
-      uploadedPhotos: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.preview) : undefined,
-    });
+    setSubmitting(true);
+    try {
+      await addRequest({
+        residentId: user.id,
+        residentName,
+        certificateType: certificateType as CertificateType,
+        purpose,
+        status: 'Pending',
+        validIdFile: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.file.name).join(', ') : undefined,
+        uploadedPhotos: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.preview) : undefined,
+      });
 
-    setCertificateType('');
-    setPurpose('');
-    setUploadedFiles([]);
-    setIsModalOpen(false);
+      setCertificateType('');
+      setPurpose('');
+      setUploadedFiles([]);
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error submitting request:', err);
+    }
+    setSubmitting(false);
   };
 
   const getStatusBadge = (status: RequestStatus) => {
@@ -141,16 +149,25 @@ const ResidentPortal: React.FC = () => {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto p-8">
+        {/* Pending Approval Notice */}
+        {profile.status === 'Pending Approval' && (
+          <Card className="mb-6 border-warning">
+            <CardContent className="p-6">
+              <p className="text-warning font-semibold">Your account is pending approval by a barangay official. Some features may be limited.</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Welcome Card */}
         <Card className="mb-6">
           <CardContent className="flex items-center justify-between p-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Welcome, {resident.firstName}!</h1>
+              <h1 className="text-2xl font-bold text-foreground">Welcome, {profile.first_name}!</h1>
               <p className="text-muted-foreground">Manage your certificate requests here.</p>
             </div>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button>Apply for New Certificate</Button>
+                <Button disabled={profile.status !== 'Active'}>Apply for New Certificate</Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
@@ -173,7 +190,7 @@ const ResidentPortal: React.FC = () => {
 
                   {certificateType && (
                     <>
-                      {/* Certificate Preview Card - Clickable */}
+                      {/* Certificate Preview Card */}
                       <div
                         className="rounded-lg border bg-muted/50 p-4 flex items-start gap-4 cursor-pointer hover:bg-muted/80 transition-colors"
                         onClick={() => setIsSampleOpen(true)}
@@ -238,16 +255,16 @@ const ResidentPortal: React.FC = () => {
                           </div>
                           <div>
                             <Label>Address</Label>
-                            <Input value={resident.address} disabled />
+                            <Input value={profile.address || ''} disabled />
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <Label>Age</Label>
-                              <Input value={resident.age} disabled />
+                              <Input value={profile.age || ''} disabled />
                             </div>
                             <div>
                               <Label>Contact Number</Label>
-                              <Input value={resident.contact} disabled />
+                              <Input value={profile.contact || ''} disabled />
                             </div>
                           </div>
                         </div>
@@ -315,7 +332,7 @@ const ResidentPortal: React.FC = () => {
                     <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit">Submit Request</Button>
+                    <Button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Request'}</Button>
                   </div>
                 </form>
               </DialogContent>
@@ -355,7 +372,7 @@ const ResidentPortal: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      You have not made any requests yet.
+                      No requests yet. Apply for a certificate to get started!
                     </TableCell>
                   </TableRow>
                 )}

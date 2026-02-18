@@ -1,169 +1,181 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth, Profile } from '@/context/AuthContext';
 import { Resident, CertificateRequest, Notification, ResidentStatus, RequestStatus, CertificateType } from '@/types/barangay';
 
 interface DataContextType {
   residents: Resident[];
   requests: CertificateRequest[];
   notifications: Notification[];
-  addResident: (resident: Omit<Resident, 'id' | 'createdAt'>) => void;
-  updateResident: (id: string, data: Partial<Resident>) => void;
-  deleteResident: (id: string) => void;
-  approveResident: (id: string) => void;
-  addRequest: (request: Omit<CertificateRequest, 'id' | 'dateRequested'>) => void;
-  updateRequestStatus: (id: string, status: RequestStatus) => void;
+  addResident: (resident: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => Promise<void>;
+  updateResident: (id: string, data: Partial<Resident>) => Promise<void>;
+  deleteResident: (id: string) => Promise<void>;
+  approveResident: (id: string) => Promise<void>;
+  addRequest: (request: Omit<CertificateRequest, 'id' | 'dateRequested'>) => Promise<void>;
+  updateRequestStatus: (id: string, status: RequestStatus) => Promise<void>;
   getResidentRequests: (residentId: string) => CertificateRequest[];
   getPendingCount: () => number;
   getTotalResidents: () => number;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const initialResidents: Resident[] = [
-  {
-    id: '1',
-    lastName: 'Dela Cruz',
-    firstName: 'Juan',
-    middleName: 'Perez',
-    age: 30,
-    address: '123 Rizal St, Palma-Urbano',
-    contact: '09171234567',
-    email: 'juan@email.com',
-    password: 'password123',
-    status: 'Active',
-    createdAt: new Date('2024-01-15'),
-  },
-  {
-    id: '2',
-    lastName: 'Santos',
-    firstName: 'Maria',
-    middleName: 'Garcia',
-    age: 25,
-    address: '456 Mabini St, Palma-Urbano',
-    contact: '09189876543',
-    email: 'maria@email.com',
-    password: 'password123',
-    status: 'Active',
-    createdAt: new Date('2024-02-20'),
-  },
-  {
-    id: '3',
-    lastName: 'Reyes',
-    firstName: 'Pedro',
-    age: 45,
-    address: '789 Luna St, Palma-Urbano',
-    contact: '09201234567',
-    email: 'pedro@email.com',
-    password: 'password123',
-    status: 'Pending Approval',
-    createdAt: new Date('2024-03-01'),
-  },
-];
+const mapProfileToResident = (p: Profile): Resident => ({
+  id: p.user_id,
+  lastName: p.last_name,
+  firstName: p.first_name,
+  middleName: p.middle_name || undefined,
+  age: p.age || 0,
+  address: p.address || '',
+  contact: p.contact || '',
+  email: p.email,
+  password: '',
+  status: p.status as ResidentStatus,
+  createdAt: new Date(p.created_at),
+});
 
-const initialRequests: CertificateRequest[] = [
-  {
-    id: '1',
-    residentId: '1',
-    residentName: 'Juan Perez Dela Cruz',
-    certificateType: 'Barangay Clearance',
-    purpose: 'For job application',
-    status: 'Pending',
-    dateRequested: new Date('2024-03-10'),
-  },
-  {
-    id: '2',
-    residentId: '2',
-    residentName: 'Maria Garcia Santos',
-    certificateType: 'Certificate of Indigency',
-    purpose: 'For medical assistance',
-    status: 'Approved',
-    dateRequested: new Date('2024-03-08'),
-    dateProcessed: new Date('2024-03-09'),
-  },
-];
-
-const initialNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'New Request',
-    description: 'Juan Dela Cruz requested a Barangay Clearance',
-    type: 'pending',
-    time: '2 hours ago',
-    read: false,
-    requestId: '1',
-  },
-  {
-    id: '2',
-    title: 'Certificate Approved',
-    description: 'Certificate of Indigency for Maria Santos has been approved',
-    type: 'approved',
-    time: '1 day ago',
-    read: false,
-    requestId: '2',
-  },
-  {
-    id: '3',
-    title: 'New Resident Signup',
-    description: 'Pedro Reyes signed up and is pending approval',
-    type: 'info',
-    time: '2 days ago',
-    read: false,
-  },
-];
+const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateRequest => {
+  const profile = profileMap[r.resident_id];
+  const name = profile
+    ? `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim()
+    : 'Unknown';
+  return {
+    id: r.id,
+    residentId: r.resident_id,
+    residentName: name,
+    certificateType: r.certificate_type as CertificateType,
+    purpose: r.purpose,
+    notes: r.notes || undefined,
+    status: r.status as RequestStatus,
+    dateRequested: new Date(r.date_requested),
+    dateProcessed: r.date_processed ? new Date(r.date_processed) : undefined,
+    validIdFile: r.valid_id_file || undefined,
+    uploadedPhotos: r.documents && Array.isArray(r.documents) && r.documents.length > 0 ? r.documents as string[] : undefined,
+  };
+};
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [residents, setResidents] = useState<Resident[]>(initialResidents);
-  const [requests, setRequests] = useState<CertificateRequest[]>(initialRequests);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const { user, isAdmin, userRole, session } = useAuth();
+  const [residents, setResidents] = useState<Resident[]>([]);
+  const [requests, setRequests] = useState<CertificateRequest[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
 
-  const addResident = (residentData: Omit<Resident, 'id' | 'createdAt'>) => {
-    const newResident: Resident = {
-      ...residentData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
+  const fetchData = useCallback(async () => {
+    if (!user || !userRole) return;
+
+    try {
+      // Fetch profiles
+      const profilesQuery = supabase.from('profiles').select('*');
+      const { data: profilesData } = await profilesQuery;
+      const profiles = (profilesData || []) as unknown as Profile[];
+      const profileMap: Record<string, Profile> = {};
+      profiles.forEach((p) => { profileMap[p.user_id] = p; });
+
+      setResidents(profiles.map(mapProfileToResident));
+
+      // Fetch requests
+      const requestsQuery = supabase.from('certificate_requests').select('*').order('date_requested', { ascending: false });
+      const { data: requestsData } = await requestsQuery;
+      const mappedRequests = (requestsData || []).map((r: any) => mapDbRequest(r, profileMap));
+      setRequests(mappedRequests);
+
+      // Derive notifications from recent requests
+      const derivedNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => ({
+        id: r.id,
+        title: r.status === 'Pending' ? 'New Request' : r.status === 'Approved' ? 'Certificate Approved' : 'Request Update',
+        description: `${r.residentName} — ${r.certificateType}`,
+        type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : 'info' as const,
+        time: r.dateRequested.toLocaleDateString(),
+        read: readNotificationIds.has(r.id),
+        requestId: r.id,
+      }));
+      setNotifications(derivedNotifications);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+  }, [user, userRole, readNotificationIds]);
+
+  useEffect(() => {
+    if (user && userRole) {
+      fetchData();
+    } else {
+      setResidents([]);
+      setRequests([]);
+      setNotifications([]);
+    }
+  }, [user, userRole, fetchData]);
+
+  const addResident = async (residentData: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => {
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'create',
+        email: residentData.email,
+        password: residentData.password,
+        firstName: residentData.firstName,
+        lastName: residentData.lastName,
+        middleName: residentData.middleName,
+        age: residentData.age,
+        address: residentData.address,
+        contact: residentData.contact,
+      },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    await fetchData();
+  };
+
+  const updateResident = async (userId: string, data: Partial<Resident>) => {
+    const updateData: any = {};
+    if (data.firstName !== undefined) updateData.first_name = data.firstName;
+    if (data.lastName !== undefined) updateData.last_name = data.lastName;
+    if (data.middleName !== undefined) updateData.middle_name = data.middleName || null;
+    if (data.age !== undefined) updateData.age = data.age;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.contact !== undefined) updateData.contact = data.contact;
+
+    await supabase.from('profiles').update(updateData).eq('user_id', userId);
+    await fetchData();
+  };
+
+  const deleteResident = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: { action: 'delete', userId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    await fetchData();
+  };
+
+  const approveResident = async (userId: string) => {
+    await supabase.from('profiles').update({ status: 'Active' }).eq('user_id', userId);
+    await fetchData();
+  };
+
+  const addRequest = async (requestData: Omit<CertificateRequest, 'id' | 'dateRequested'>) => {
+    const insertData: any = {
+      resident_id: requestData.residentId,
+      certificate_type: requestData.certificateType,
+      purpose: requestData.purpose,
+      notes: requestData.notes || null,
+      status: requestData.status || 'Pending',
+      valid_id_file: requestData.validIdFile || null,
+      documents: requestData.uploadedPhotos || [],
     };
-    setResidents([...residents, newResident]);
+
+    await supabase.from('certificate_requests').insert(insertData);
+    await fetchData();
   };
 
-  const updateResident = (id: string, data: Partial<Resident>) => {
-    setResidents(residents.map((r) => (r.id === id ? { ...r, ...data } : r)));
-  };
-
-  const deleteResident = (id: string) => {
-    setResidents(residents.filter((r) => r.id !== id));
-  };
-
-  const approveResident = (id: string) => {
-    setResidents(residents.map((r) => 
-      r.id === id ? { ...r, status: 'Active' as ResidentStatus } : r
-    ));
-  };
-
-  const addRequest = (requestData: Omit<CertificateRequest, 'id' | 'dateRequested'>) => {
-    const newRequest: CertificateRequest = {
-      ...requestData,
-      id: Date.now().toString(),
-      dateRequested: new Date(),
-    };
-    setRequests([...requests, newRequest]);
-    
-    const newNotification: Notification = {
-      id: Date.now().toString(),
-      title: 'New Certificate Request',
-      description: `${requestData.residentName} requested a ${requestData.certificateType}`,
-      type: 'pending',
-      time: 'Just now',
-      read: false,
-      requestId: newRequest.id,
-    };
-    setNotifications([newNotification, ...notifications]);
-  };
-
-  const updateRequestStatus = (id: string, status: RequestStatus) => {
-    setRequests(requests.map((r) => 
-      r.id === id ? { ...r, status, dateProcessed: new Date() } : r
-    ));
+  const updateRequestStatus = async (id: string, status: RequestStatus) => {
+    await supabase.from('certificate_requests').update({
+      status,
+      date_processed: new Date().toISOString(),
+    }).eq('id', id);
+    await fetchData();
   };
 
   const getResidentRequests = (residentId: string) => {
@@ -179,11 +191,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const markNotificationRead = (id: string) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    setReadNotificationIds((prev) => new Set([...prev, id]));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
   const markAllNotificationsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setReadNotificationIds((prev) => {
+      const newSet = new Set(prev);
+      notifications.forEach((n) => newSet.add(n.id));
+      return newSet;
+    });
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   return (
@@ -202,6 +220,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       getTotalResidents,
       markNotificationRead,
       markAllNotificationsRead,
+      refreshData: fetchData,
     }}>
       {children}
     </DataContext.Provider>

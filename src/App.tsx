@@ -20,23 +20,29 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole: 'official' | 'resident' }> = ({ children, allowedRole }) => {
-  const { currentUser, userRole, isLoading } = useAuth();
+  const { user, userRole, isLoading } = useAuth();
   
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
-  if (!currentUser || userRole !== allowedRole) return <Navigate to="/" replace />;
+  
+  if (!user) return <Navigate to="/" replace />;
+  
+  // Map DB roles to app roles
+  const effectiveRole = userRole === 'admin' ? 'official' : 'resident';
+  if (effectiveRole !== allowedRole) return <Navigate to="/" replace />;
+  
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
-  const { currentUser, userRole, isLoading } = useAuth();
+  const { user, userRole, isLoading } = useAuth();
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
 
   return (
     <Routes>
       <Route path="/" element={
-        currentUser ? (
-          <Navigate to={userRole === 'official' ? '/dashboard' : '/portal'} replace />
+        user ? (
+          <Navigate to={userRole === 'admin' ? '/dashboard' : '/portal'} replace />
         ) : (
           <LoginPage />
         )
