@@ -1,133 +1,147 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Resident, Official, UserRole } from '@/types/barangay';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  middle_name: string | null;
+  age: number | null;
+  address: string | null;
+  contact: string | null;
+  email: string;
+  status: string;
+  created_at: string;
+}
+
+export type UserRole = 'admin' | 'resident';
 
 interface AuthContextType {
-  currentUser: Resident | Official | null;
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
   userRole: UserRole | null;
-  login: (email: string, password: string, role: UserRole) => boolean;
-  logout: () => void;
-  registerResident: (resident: Omit<Resident, 'id' | 'status' | 'createdAt'>) => boolean;
+  isAdmin: boolean;
   isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
+  registerResident: (data: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    age: number;
+    address: string;
+    contact: string;
+  }) => Promise<{ error: string | null }>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mockOfficials: Official[] = [
-  { id: '1', name: 'Rose', email: 'rose@barangay.gov', password: 'admin123' },
-  { id: '2', name: 'Admin', email: 'admin@barangay.gov', password: 'admin123' },
-];
-
-const initialResidents: Resident[] = [
-  {
-    id: '1',
-    lastName: 'Dela Cruz',
-    firstName: 'Juan',
-    middleName: 'Perez',
-    age: 30,
-    address: '123 Rizal St, Palma-Urbano',
-    contact: '09171234567',
-    email: 'juan@email.com',
-    password: 'password123',
-    status: 'Active',
-    createdAt: new Date('2024-01-15'),
-  },
-  {
-    id: '2',
-    lastName: 'Santos',
-    firstName: 'Maria',
-    middleName: 'Garcia',
-    age: 25,
-    address: '456 Mabini St, Palma-Urbano',
-    contact: '09189876543',
-    email: 'maria@email.com',
-    password: 'password123',
-    status: 'Active',
-    createdAt: new Date('2024-02-20'),
-  },
-  {
-    id: '3',
-    lastName: 'Reyes',
-    firstName: 'Pedro',
-    age: 45,
-    address: '789 Luna St, Palma-Urbano',
-    contact: '09201234567',
-    email: 'pedro@email.com',
-    password: 'password123',
-    status: 'Active',
-    createdAt: new Date('2024-03-01'),
-  },
-];
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<Resident | Official | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [residents, setResidents] = useState<Resident[]>(initialResidents);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session from localStorage on mount
-  useEffect(() => {
-    const savedSession = localStorage.getItem('brgy_session');
-    if (savedSession) {
-      try {
-        const session = JSON.parse(savedSession);
-        setCurrentUser(session.user);
-        setUserRole(session.role);
-      } catch {
-        localStorage.removeItem('brgy_session');
-      }
-    }
-    setIsLoading(false);
+  const fetchProfileAndRole = useCallback(async (userId: string) => {
+    const [profileRes, roleRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('user_id', userId).single(),
+      supabase.from('user_roles').select('role').eq('user_id', userId).single(),
+    ]);
+    if (profileRes.data) setProfile(profileRes.data as unknown as Profile);
+    if (roleRes.data) setUserRole(roleRes.data.role as UserRole);
   }, []);
 
-  const login = (email: string, password: string, role: UserRole): boolean => {
-    if (role === 'official') {
-      const official = mockOfficials.find(
-        (o) => o.email.toLowerCase() === email.toLowerCase() && o.password === password
-      );
-      if (official) {
-        setCurrentUser(official);
-        setUserRole('official');
-        localStorage.setItem('brgy_session', JSON.stringify({ user: official, role: 'official' }));
-        return true;
+  useEffect(() => {
+    // Set up auth listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      if (session?.user) {
+        // Use setTimeout to avoid Supabase auth deadlock
+        setTimeout(() => fetchProfileAndRole(session.user.id), 0);
+      } else {
+        setProfile(null);
+        setUserRole(null);
       }
-    } else {
-      const resident = residents.find(
-        (r) => r.email.toLowerCase() === email.toLowerCase() && r.password === password && r.status === 'Active'
-      );
-      if (resident) {
-        setCurrentUser(resident);
-        setUserRole('resident');
-        localStorage.setItem('brgy_session', JSON.stringify({ user: resident, role: 'resident' }));
-        return true;
+      setIsLoading(false);
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchProfileAndRole(session.user.id).then(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
       }
-    }
-    return false;
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfileAndRole]);
+
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message || null };
   };
 
-  const logout = () => {
-    setCurrentUser(null);
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setProfile(null);
     setUserRole(null);
-    localStorage.removeItem('brgy_session');
   };
 
-  const registerResident = (residentData: Omit<Resident, 'id' | 'status' | 'createdAt'>): boolean => {
-    const exists = residents.some(
-      (r) => r.email.toLowerCase() === residentData.email.toLowerCase()
-    );
-    if (exists) return false;
+  const registerResident = async (data: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    age: number;
+    address: string;
+    contact: string;
+  }) => {
+    const { error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          middle_name: data.middleName || null,
+          age: data.age,
+          address: data.address,
+          contact: data.contact,
+        },
+      },
+    });
+    return { error: error?.message || null };
+  };
 
-    const newResident: Resident = {
-      ...residentData,
-      id: Date.now().toString(),
-      status: 'Active',
-      createdAt: new Date(),
-    };
-    setResidents([...residents, newResident]);
-    return true;
+  const refreshProfile = async () => {
+    if (session?.user) {
+      await fetchProfileAndRole(session.user.id);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, login, logout, registerResident, isLoading }}>
+    <AuthContext.Provider value={{
+      session,
+      user: session?.user || null,
+      profile,
+      userRole,
+      isAdmin: userRole === 'admin',
+      isLoading,
+      login,
+      logout,
+      registerResident,
+      refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -140,5 +154,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export { initialResidents };

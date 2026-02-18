@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Phone, MapPin, Hash, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ import logo from '@/assets/logo.png';
 import barangayHall from '@/assets/barangay-hall.jpg';
 
 const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
   const { login, registerResident } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -23,6 +21,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -39,7 +38,7 @@ const LoginPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [captchaVerified, setCaptchaVerified] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -48,16 +47,17 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    if (login(email, password, 'official')) {
-      navigate('/dashboard');
-    } else if (login(email, password, 'resident')) {
-      navigate('/portal');
-    } else {
-      setError('Incorrect email or password. Please try again.');
+    setLoading(true);
+    const { error } = await login(email, password);
+    setLoading(false);
+
+    if (error) {
+      setError(error);
     }
+    // Navigation happens automatically via App.tsx route guards
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -72,7 +72,13 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const registered = registerResident({
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await registerResident({
       firstName,
       lastName,
       middleName,
@@ -82,11 +88,13 @@ const LoginPage: React.FC = () => {
       email,
       password,
     });
+    setLoading(false);
 
-    if (registered) {
-      setSuccess('Account created successfully! You can now log in.');
+    if (error) {
+      setError(error);
+    } else {
+      setSuccess('Account created! Please check your email to verify your account, then log in.');
       setIsSignUp(false);
-      // Reset sign up fields
       setFirstName('');
       setLastName('');
       setMiddleName('');
@@ -95,8 +103,6 @@ const LoginPage: React.FC = () => {
       setContact('');
       setPassword('');
       setConfirmPassword('');
-    } else {
-      setError('Email already registered. Please use a different email.');
     }
   };
 
@@ -215,7 +221,7 @@ const LoginPage: React.FC = () => {
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
               {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
 
-              <Button type="submit" className="w-full">Login</Button>
+              <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</Button>
 
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -280,7 +286,7 @@ const LoginPage: React.FC = () => {
                 <Label htmlFor="signupPassword">Password *</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="signupPassword" type={showPassword ? 'text' : 'password'} placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10" required />
+                  <Input id="signupPassword" type={showPassword ? 'text' : 'password'} placeholder="Create a password (min. 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10" required />
                   <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground focus:outline-none" tabIndex={-1}>
                     {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
@@ -294,10 +300,10 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+              {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
 
-              <Button type="submit" className="w-full">Sign Up</Button>
+              <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Creating account...' : 'Sign Up'}</Button>
             </form>
           )}
 

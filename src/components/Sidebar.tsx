@@ -20,8 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const location = useLocation();
   const { logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 

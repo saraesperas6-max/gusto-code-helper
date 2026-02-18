@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Bell, Sun, Moon, Check } from 'lucide-react';
+import React from 'react';
+import { Search, Bell, Sun, Moon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,16 +19,14 @@ interface TopbarProps {
 }
 
 const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSearch }) => {
-  const { currentUser } = useAuth();
+  const { profile } = useAuth();
   const { notifications, markNotificationRead, markAllNotificationsRead } = useData();
   const { theme, toggleTheme } = useTheme();
   
   const unreadCount = notifications.filter(n => !n.read).length;
-  const userName = currentUser && 'name' in currentUser 
-    ? currentUser.name 
-    : currentUser && 'firstName' in currentUser 
-      ? `${currentUser.firstName} ${currentUser.lastName}`
-      : 'User';
+  const userName = profile
+    ? `${profile.first_name} ${profile.last_name}`
+    : 'User';
 
   return (
     <div className="bg-card rounded-lg shadow-sm p-4 mb-6 flex items-center justify-between">
