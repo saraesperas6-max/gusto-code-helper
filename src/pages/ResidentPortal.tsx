@@ -682,13 +682,6 @@ const ResidentPortal: React.FC = () => {
                       </div>
                     )}
 
-                    {viewingRequest.validIdFile && (
-                      <div>
-                        <Label className="text-muted-foreground text-xs">Uploaded Documents</Label>
-                        <p className="font-medium text-sm">{viewingRequest.validIdFile}</p>
-                      </div>
-                    )}
-
                     {viewingRequest.uploadedPhotos && viewingRequest.uploadedPhotos.length > 0 && (
                       <div>
                         <Label className="text-muted-foreground text-xs">Uploaded Photos</Label>
