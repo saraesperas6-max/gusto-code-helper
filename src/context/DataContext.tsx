@@ -6,6 +6,7 @@ import { Resident, CertificateRequest, Notification, ResidentStatus, RequestStat
 interface DataContextType {
   residents: Resident[];
   requests: CertificateRequest[];
+  trashedRequests: CertificateRequest[];
   notifications: Notification[];
   addResident: (resident: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => Promise<void>;
   updateResident: (id: string, data: Partial<Resident>) => Promise<void>;
@@ -14,8 +15,12 @@ interface DataContextType {
   addRequest: (request: Omit<CertificateRequest, 'id' | 'dateRequested'>) => Promise<void>;
   updateRequest: (id: string, data: { purpose?: string; notes?: string }) => Promise<void>;
   deleteRequest: (id: string) => Promise<void>;
+  softDeleteRequest: (id: string) => Promise<void>;
+  restoreRequest: (id: string) => Promise<void>;
+  permanentlyDeleteRequest: (id: string) => Promise<void>;
   updateRequestStatus: (id: string, status: RequestStatus) => Promise<void>;
   getResidentRequests: (residentId: string) => CertificateRequest[];
+  getTrashedRequests: (residentId: string) => CertificateRequest[];
   getPendingCount: () => number;
   getTotalResidents: () => number;
   markNotificationRead: (id: string) => void;
@@ -63,6 +68,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user, isAdmin, userRole, session } = useAuth();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
+  const [trashedRequests, setTrashedRequests] = useState<CertificateRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
 
@@ -79,11 +85,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setResidents(profiles.map(mapProfileToResident));
 
-      // Fetch requests
-      const requestsQuery = supabase.from('certificate_requests').select('*').order('date_requested', { ascending: false });
+      // Fetch active requests (deleted_at IS NULL — handled by RLS policy)
+      const requestsQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
       const { data: requestsData } = await requestsQuery;
       const mappedRequests = (requestsData || []).map((r: any) => mapDbRequest(r, profileMap));
       setRequests(mappedRequests);
+
+      // Fetch trashed requests (deleted_at IS NOT NULL)
+      const trashedQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+      const { data: trashedData } = await trashedQuery;
+      setTrashedRequests((trashedData || []).map((r: any) => mapDbRequest(r, profileMap)));
 
       // Derive notifications from recent requests
       const derivedNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => ({
@@ -193,8 +204,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await fetchData();
   };
 
+  const softDeleteRequest = async (id: string) => {
+    await supabase.from('certificate_requests').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    await fetchData();
+  };
+
+  const restoreRequest = async (id: string) => {
+    await supabase.from('certificate_requests').update({ deleted_at: null }).eq('id', id);
+    await fetchData();
+  };
+
+  const permanentlyDeleteRequest = async (id: string) => {
+    await supabase.from('certificate_requests').delete().eq('id', id);
+    await fetchData();
+  };
+
   const getResidentRequests = (residentId: string) => {
     return requests.filter((r) => r.residentId === residentId);
+  };
+
+  const getTrashedRequests = (residentId: string) => {
+    return trashedRequests.filter((r) => r.residentId === residentId);
   };
 
   const getPendingCount = () => {
@@ -223,6 +253,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <DataContext.Provider value={{
       residents,
       requests,
+      trashedRequests,
       notifications,
       addResident,
       updateResident,
@@ -231,8 +262,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addRequest,
       updateRequest,
       deleteRequest,
+      softDeleteRequest,
+      restoreRequest,
+      permanentlyDeleteRequest,
       updateRequestStatus,
       getResidentRequests,
+      getTrashedRequests,
       getPendingCount,
       getTotalResidents,
       markNotificationRead,

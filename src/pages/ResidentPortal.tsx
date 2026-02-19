@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle } from 'lucide-react';
+import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +50,7 @@ const ResidentPortal: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { addRequest, getResidentRequests, updateRequest, deleteRequest } = useData();
+  const { addRequest, getResidentRequests, updateRequest, softDeleteRequest, restoreRequest, permanentlyDeleteRequest, getTrashedRequests } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
   const [purpose, setPurpose] = useState('');
@@ -67,6 +67,8 @@ const ResidentPortal: React.FC = () => {
   const [editNotes, setEditNotes] = useState('');
   const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [deletingPermanentlyId, setDeletingPermanentlyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -76,6 +78,7 @@ const ResidentPortal: React.FC = () => {
 
   const residentName = `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim();
   const myRequests = getResidentRequests(user.id);
+  const myTrashedRequests = getTrashedRequests(user.id);
 
   const handleLogout = async () => {
     await logout();
@@ -719,6 +722,66 @@ const ResidentPortal: React.FC = () => {
             </Dialog>
           </CardContent>
         </Card>
+
+        {/* Trash Bin */}
+        <Card className="mt-6">
+          <CardHeader className="cursor-pointer" onClick={() => setShowTrash(!showTrash)}>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trash2 className="h-5 w-5 text-muted-foreground" />
+              Trash Bin
+              {myTrashedRequests.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{myTrashedRequests.length}</Badge>
+              )}
+              <span className="ml-auto text-xs text-muted-foreground font-normal">{showTrash ? 'Hide' : 'Show'}</span>
+            </CardTitle>
+          </CardHeader>
+          {showTrash && (
+            <CardContent>
+              {myTrashedRequests.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Certificate Type</TableHead>
+                      <TableHead>Date Requested</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead className="text-center">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {myTrashedRequests.map((request, index) => (
+                      <TableRow key={request.id} className="opacity-70">
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{request.certificateType}</TableCell>
+                        <TableCell>{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{request.purpose}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" title="Restore request" onClick={async () => {
+                              try {
+                                await restoreRequest(request.id);
+                                toast({ title: 'Request restored' });
+                              } catch {
+                                toast({ title: 'Failed to restore', variant: 'destructive' });
+                              }
+                            }}>
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Delete permanently" className="text-destructive hover:text-destructive" onClick={() => setDeletingPermanentlyId(request.id)}>
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-6">Trash bin is empty.</p>
+              )}
+            </CardContent>
+          )}
+        </Card>
       </div>
 
       {/* Photo Viewer Dialog */}
@@ -774,15 +837,15 @@ const ResidentPortal: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Request</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this request? This action cannot be undone.
+              Are you sure you want to cancel this request? It will be moved to the trash bin and can be recovered later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, keep it</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
               try {
-                await deleteRequest(cancellingRequestId!);
-                toast({ title: 'Request cancelled successfully' });
+                await softDeleteRequest(cancellingRequestId!);
+                toast({ title: 'Request moved to trash' });
               } catch {
                 toast({ title: 'Failed to cancel request', variant: 'destructive' });
               } finally {
@@ -790,6 +853,33 @@ const ResidentPortal: React.FC = () => {
               }
             }}>
               Yes, cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Alert */}
+      <AlertDialog open={!!deletingPermanentlyId} onOpenChange={(open) => { if (!open) setDeletingPermanentlyId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Permanently</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the request. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+              try {
+                await permanentlyDeleteRequest(deletingPermanentlyId!);
+                toast({ title: 'Request permanently deleted' });
+              } catch {
+                toast({ title: 'Failed to delete request', variant: 'destructive' });
+              } finally {
+                setDeletingPermanentlyId(null);
+              }
+            }}>
+              Delete Forever
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
