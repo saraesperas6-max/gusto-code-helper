@@ -687,9 +687,7 @@ const ResidentPortal: React.FC = () => {
                         <Label className="text-muted-foreground text-xs">Uploaded Photos</Label>
                         <div className="mt-2 grid grid-cols-3 gap-2">
                           {viewingRequest.uploadedPhotos.map((photo, i) => (
-                            <a key={i} href={photo} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                              <img src={photo} alt={`Document ${i + 1}`} className="w-full h-20 object-cover rounded-lg border hover:opacity-80 transition-opacity" />
-                            </a>
+                            <img key={i} src={photo} alt={`Document ${i + 1}`} className="w-full h-20 object-cover rounded-lg border" />
                           ))}
                         </div>
                       </div>
