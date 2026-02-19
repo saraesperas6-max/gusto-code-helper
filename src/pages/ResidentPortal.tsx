@@ -22,6 +22,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
 import logo from '@/assets/logo.png';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const CERTIFICATE_TYPES: CertificateType[] = [
   'Barangay Clearance',
@@ -53,6 +55,8 @@ const ResidentPortal: React.FC = () => {
   const [isSampleOpen, setIsSampleOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fileError, setFileError] = useState('');
+  const [validatingFile, setValidatingFile] = useState(false);
+  const { toast } = useToast();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -67,30 +71,75 @@ const ResidentPortal: React.FC = () => {
     navigate('/');
   };
 
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateIdWithAI = async (base64: string): Promise<{ valid: boolean; reason?: string; idType?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-id', {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error('ID validation error:', err);
+      return { valid: false, reason: 'Could not verify document. Please try again.' };
+    }
+  };
+
+  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     setFileError('');
-    if (files) {
-      for (const file of Array.from(files)) {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-          setFileError(`"${file.name}" is not a valid image. Accepted: JPG, PNG, WEBP, GIF.`);
-          e.target.value = '';
-          return;
-        }
-        if (file.size > MAX_FILE_SIZE) {
-          setFileError(`"${file.name}" exceeds the 5MB file size limit.`);
-          e.target.value = '';
-          return;
-        }
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setFileError(`"${file.name}" is not a valid image. Accepted: JPG, PNG, WEBP, GIF.`);
+        e.target.value = '';
+        return;
       }
-      Array.from(files).forEach(file => {
+      if (file.size > MAX_FILE_SIZE) {
+        setFileError(`"${file.name}" exceeds the 5MB file size limit.`);
+        e.target.value = '';
+        return;
+      }
+    }
+
+    // Read and validate each file
+    for (const file of Array.from(files)) {
+      const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setUploadedFiles(prev => [...prev, { file, preview: reader.result as string }]);
-        };
+        reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
       });
+
+      // Validate the first upload slot (index 0) as a government ID
+      const currentIndex = uploadedFiles.length;
+      if (currentIndex === 0) {
+        setValidatingFile(true);
+        setFileError('');
+        const result = await validateIdWithAI(base64);
+        setValidatingFile(false);
+
+        if (!result.valid) {
+          setFileError(
+            `"${file.name}" is not a valid government-issued ID. ${result.reason || ''} Accepted IDs: National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card.`
+          );
+          toast({
+            title: 'Invalid ID',
+            description: result.reason || 'Please upload a valid government-issued ID.',
+            variant: 'destructive',
+          });
+          e.target.value = '';
+          return;
+        }
+
+        toast({
+          title: 'ID Verified',
+          description: `${result.idType || 'Government ID'} detected and accepted.`,
+        });
+      }
+
+      setUploadedFiles(prev => [...prev, { file, preview: base64 }]);
     }
+
     e.target.value = '';
   };
 
@@ -340,12 +389,24 @@ const ResidentPortal: React.FC = () => {
                               <p className="text-[10px] text-muted-foreground mt-2">
                                 Uploaded: {uploadedFiles.length} / {requiredDocs.length} required · Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
                               </p>
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                <span className="font-semibold">Accepted Gov't IDs:</span> National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card
+                              </p>
                             </div>
-                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-1">
-                              <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                              <span className="text-sm text-muted-foreground">Click to upload photos</span>
-                              <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
-                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} />
+                            <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-1 ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                              {validatingFile ? (
+                                <>
+                                  <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                                  <span className="text-sm text-muted-foreground">Verifying document with AI...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                                  <span className="text-sm text-muted-foreground">Click to upload photos</span>
+                                  <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
+                                </>
+                              )}
+                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
                             </label>
                             {fileError && (
                               <p className="text-xs text-destructive mt-1">{fileError}</p>
