@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, X, FileText, Sun, Moon } from 'lucide-react';
+import { LogOut, Upload, X, FileText, Sun, Moon, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
-import { CertificateType, RequestStatus } from '@/types/barangay';
+import { CertificateRequest, CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
 import logo from '@/assets/logo.png';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +57,7 @@ const ResidentPortal: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [fileError, setFileError] = useState('');
   const [validatingFile, setValidatingFile] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<CertificateRequest | null>(null);
   const { toast } = useToast();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -584,6 +585,7 @@ const ResidentPortal: React.FC = () => {
                   <TableHead>Date Requested</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Purpose</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -597,17 +599,110 @@ const ResidentPortal: React.FC = () => {
                       </TableCell>
                       <TableCell>{getStatusBadge(request.status)}</TableCell>
                       <TableCell>{request.purpose}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => setViewingRequest(request)} title="View submitted form">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No requests yet. Apply for a certificate to get started!
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+
+            {/* View Submitted Request Dialog */}
+            <Dialog open={!!viewingRequest} onOpenChange={(open) => { if (!open) setViewingRequest(null); }}>
+              <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Submitted Request Details</DialogTitle>
+                </DialogHeader>
+                {viewingRequest && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Certificate Type</Label>
+                        <p className="font-medium text-sm">{viewingRequest.certificateType}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Status</Label>
+                        <div className="mt-0.5">{getStatusBadge(viewingRequest.status)}</div>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Date Requested</Label>
+                        <p className="font-medium text-sm">{format(new Date(viewingRequest.dateRequested), 'MMM dd, yyyy')}</p>
+                      </div>
+                      {viewingRequest.dateProcessed && (
+                        <div>
+                          <Label className="text-muted-foreground text-xs">Date Processed</Label>
+                          <p className="font-medium text-sm">{format(new Date(viewingRequest.dateProcessed), 'MMM dd, yyyy')}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <hr />
+
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Applicant</Label>
+                      <p className="font-medium text-sm">{viewingRequest.residentName}</p>
+                    </div>
+
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Address</Label>
+                      <p className="font-medium text-sm">{profile.address || 'N/A'}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Age</Label>
+                        <p className="font-medium text-sm">{profile.age || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Contact</Label>
+                        <p className="font-medium text-sm">{profile.contact || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    <hr />
+
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Purpose</Label>
+                      <p className="font-medium text-sm">{viewingRequest.purpose}</p>
+                    </div>
+
+                    {viewingRequest.notes && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Notes</Label>
+                        <p className="font-medium text-sm">{viewingRequest.notes}</p>
+                      </div>
+                    )}
+
+                    {viewingRequest.validIdFile && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Uploaded Documents</Label>
+                        <p className="font-medium text-sm">{viewingRequest.validIdFile}</p>
+                      </div>
+                    )}
+
+                    {viewingRequest.uploadedPhotos && viewingRequest.uploadedPhotos.length > 0 && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Uploaded Photos</Label>
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                          {viewingRequest.uploadedPhotos.map((photo, i) => (
+                            <img key={i} src={photo} alt={`Document ${i + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
