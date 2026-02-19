@@ -98,9 +98,34 @@ const ResidentPortal: React.FC = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const getRequiredDocuments = (type: CertificateType | ''): string[] => {
+    const docs = ['Valid Government-Issued ID'];
+    if (type === 'Business Permit') {
+      docs.push('Proof of Business Registration', 'Barangay Clearance', 'Cedula');
+    }
+    if (type === 'Certificate of Indigency') {
+      docs.push('Certificate of No Income / Affidavit');
+    }
+    if (type === 'Certificate of Low Income') {
+      docs.push('Proof of Income / Payslip');
+    }
+    return docs;
+  };
+
+  const requiredDocs = getRequiredDocuments(certificateType);
+  const missingUploads = certificateType && uploadedFiles.length < requiredDocs.length;
+
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!certificateType) return;
+    if (uploadedFiles.length === 0) {
+      setFileError('Please upload all required documents before submitting.');
+      return;
+    }
+    if (uploadedFiles.length < requiredDocs.length) {
+      setFileError(`Please upload at least ${requiredDocs.length} document(s): ${requiredDocs.join(', ')}.`);
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -306,22 +331,15 @@ const ResidentPortal: React.FC = () => {
                             <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
                               <p className="text-xs font-semibold text-foreground mb-1">Required Documents for {certificateType}:</p>
                               <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5">
-                                <li>Valid Government-Issued ID</li>
-                                {certificateType === 'Business Permit' && (
-                                  <>
-                                    <li>Proof of Business Registration</li>
-                                    <li>Barangay Clearance</li>
-                                    <li>Cedula</li>
-                                  </>
-                                )}
-                                {certificateType === 'Certificate of Indigency' && (
-                                  <li>Certificate of No Income / Affidavit</li>
-                                )}
-                                {certificateType === 'Certificate of Low Income' && (
-                                  <li>Proof of Income / Payslip</li>
-                                )}
+                                {requiredDocs.map((doc, i) => (
+                                  <li key={doc} className={uploadedFiles.length > i ? 'text-success font-medium' : ''}>
+                                    {doc} {uploadedFiles.length > i ? '✓' : '(required)'}
+                                  </li>
+                                ))}
                               </ul>
-                              <p className="text-[10px] text-muted-foreground mt-2">Accepted formats: JPG, PNG, WEBP, GIF · Max 5MB per file</p>
+                              <p className="text-[10px] text-muted-foreground mt-2">
+                                Uploaded: {uploadedFiles.length} / {requiredDocs.length} required · Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
+                              </p>
                             </div>
                             <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-1">
                               <Upload className="h-6 w-6 text-muted-foreground mb-1" />
@@ -361,7 +379,9 @@ const ResidentPortal: React.FC = () => {
                     <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Request'}</Button>
+                    <Button type="submit" disabled={submitting || !certificateType || (!!certificateType && uploadedFiles.length < requiredDocs.length)}>
+                      {submitting ? 'Submitting...' : 'Submit Request'}
+                    </Button>
                   </div>
                 </form>
               </DialogContent>
