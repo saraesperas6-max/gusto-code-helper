@@ -52,6 +52,10 @@ const ResidentPortal: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ file: File; preview: string }[]>([]);
   const [isSampleOpen, setIsSampleOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [fileError, setFileError] = useState('');
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
   if (!profile || !user) return null;
 
@@ -65,7 +69,20 @@ const ResidentPortal: React.FC = () => {
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    setFileError('');
     if (files) {
+      for (const file of Array.from(files)) {
+        if (!ALLOWED_TYPES.includes(file.type)) {
+          setFileError(`"${file.name}" is not a valid image. Accepted: JPG, PNG, WEBP, GIF.`);
+          e.target.value = '';
+          return;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          setFileError(`"${file.name}" exceeds the 5MB file size limit.`);
+          e.target.value = '';
+          return;
+        }
+      }
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -286,23 +303,35 @@ const ResidentPortal: React.FC = () => {
                           </div>
                           <div>
                             <Label>Upload Requirements</Label>
-                            {certificateType === 'Business Permit' && (
-                              <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
-                                <p className="text-xs font-semibold text-foreground mb-1">Requirements for Business Permit:</p>
-                                <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5">
-                                  <li>Proof of Business Registration</li>
-                                  <li>Barangay Clearance</li>
-                                  <li>Valid ID</li>
-                                  <li>Cedula</li>
-                                </ul>
-                              </div>
-                            )}
+                            <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
+                              <p className="text-xs font-semibold text-foreground mb-1">Required Documents for {certificateType}:</p>
+                              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5">
+                                <li>Valid Government-Issued ID</li>
+                                {certificateType === 'Business Permit' && (
+                                  <>
+                                    <li>Proof of Business Registration</li>
+                                    <li>Barangay Clearance</li>
+                                    <li>Cedula</li>
+                                  </>
+                                )}
+                                {certificateType === 'Certificate of Indigency' && (
+                                  <li>Certificate of No Income / Affidavit</li>
+                                )}
+                                {certificateType === 'Certificate of Low Income' && (
+                                  <li>Proof of Income / Payslip</li>
+                                )}
+                              </ul>
+                              <p className="text-[10px] text-muted-foreground mt-2">Accepted formats: JPG, PNG, WEBP, GIF · Max 5MB per file</p>
+                            </div>
                             <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-1">
                               <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                               <span className="text-sm text-muted-foreground">Click to upload photos</span>
-                              <span className="text-xs text-muted-foreground">(You can upload multiple files)</span>
-                              <input type="file" accept="image/*" multiple className="hidden" onChange={handleFilesChange} />
+                              <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
+                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} />
                             </label>
+                            {fileError && (
+                              <p className="text-xs text-destructive mt-1">{fileError}</p>
+                            )}
                             {uploadedFiles.length > 0 && (
                               <div className="mt-2 grid grid-cols-3 gap-2">
                                 {uploadedFiles.map((item, index) => (
