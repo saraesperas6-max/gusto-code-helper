@@ -12,6 +12,8 @@ interface DataContextType {
   deleteResident: (id: string) => Promise<void>;
   approveResident: (id: string) => Promise<void>;
   addRequest: (request: Omit<CertificateRequest, 'id' | 'dateRequested'>) => Promise<void>;
+  updateRequest: (id: string, data: { purpose?: string; notes?: string }) => Promise<void>;
+  deleteRequest: (id: string) => Promise<void>;
   updateRequestStatus: (id: string, status: RequestStatus) => Promise<void>;
   getResidentRequests: (residentId: string) => CertificateRequest[];
   getPendingCount: () => number;
@@ -178,6 +180,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await fetchData();
   };
 
+  const updateRequest = async (id: string, data: { purpose?: string; notes?: string }) => {
+    const updateData: any = {};
+    if (data.purpose !== undefined) updateData.purpose = data.purpose;
+    if (data.notes !== undefined) updateData.notes = data.notes || null;
+    await supabase.from('certificate_requests').update(updateData).eq('id', id);
+    await fetchData();
+  };
+
+  const deleteRequest = async (id: string) => {
+    await supabase.from('certificate_requests').delete().eq('id', id);
+    await fetchData();
+  };
+
   const getResidentRequests = (residentId: string) => {
     return requests.filter((r) => r.residentId === residentId);
   };
@@ -214,6 +229,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       deleteResident,
       approveResident,
       addRequest,
+      updateRequest,
+      deleteRequest,
       updateRequestStatus,
       getResidentRequests,
       getPendingCount,
