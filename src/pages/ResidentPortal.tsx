@@ -52,6 +52,7 @@ const ResidentPortal: React.FC = () => {
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
   const [purpose, setPurpose] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [businessPermitFiles, setBusinessPermitFiles] = useState<Record<string, { file: File; preview: string } | null>>({});
   const [isSampleOpen, setIsSampleOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fileError, setFileError] = useState('');
@@ -102,7 +103,6 @@ const ResidentPortal: React.FC = () => {
       }
     }
 
-    // Read and validate each file
     for (const file of Array.from(files)) {
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -110,7 +110,6 @@ const ResidentPortal: React.FC = () => {
         reader.readAsDataURL(file);
       });
 
-      // Validate the first upload slot (index 0) as a government ID
       const currentIndex = uploadedFiles.length;
       if (currentIndex === 0) {
         setValidatingFile(true);
@@ -143,6 +142,61 @@ const ResidentPortal: React.FC = () => {
     e.target.value = '';
   };
 
+  const handleBusinessPermitFileChange = async (docName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setFileError('');
+    if (!file) return;
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setFileError(`"${file.name}" is not a valid image. Accepted: JPG, PNG, WEBP, GIF.`);
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`"${file.name}" exceeds the 5MB file size limit.`);
+      e.target.value = '';
+      return;
+    }
+
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
+    // Validate government ID slot
+    if (docName === 'Valid Government-Issued ID') {
+      setValidatingFile(true);
+      const result = await validateIdWithAI(base64);
+      setValidatingFile(false);
+
+      if (!result.valid) {
+        setFileError(
+          `"${file.name}" is not a valid government-issued ID. ${result.reason || ''} Accepted IDs: National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card.`
+        );
+        toast({
+          title: 'Invalid ID',
+          description: result.reason || 'Please upload a valid government-issued ID.',
+          variant: 'destructive',
+        });
+        e.target.value = '';
+        return;
+      }
+
+      toast({
+        title: 'ID Verified',
+        description: `${result.idType || 'Government ID'} detected and accepted.`,
+      });
+    }
+
+    setBusinessPermitFiles(prev => ({ ...prev, [docName]: { file, preview: base64 } }));
+    e.target.value = '';
+  };
+
+  const removeBusinessPermitFile = (docName: string) => {
+    setBusinessPermitFiles(prev => ({ ...prev, [docName]: null }));
+  };
+
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
@@ -156,16 +210,35 @@ const ResidentPortal: React.FC = () => {
   };
 
   const requiredDocs = getRequiredDocuments(certificateType);
-  const missingUploads = certificateType && uploadedFiles.length < requiredDocs.length;
+  const isBusinessPermit = certificateType === 'Business Permit';
+  const businessPermitUploaded = isBusinessPermit ? requiredDocs.every(doc => !!businessPermitFiles[doc]) : false;
+  const missingUploads = certificateType && (isBusinessPermit ? !businessPermitUploaded : uploadedFiles.length < requiredDocs.length);
+
+  const getAllUploadedFiles = () => {
+    if (isBusinessPermit) {
+      return requiredDocs
+        .map(doc => businessPermitFiles[doc])
+        .filter((f): f is { file: File; preview: string } => !!f);
+    }
+    return uploadedFiles;
+  };
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!certificateType) return;
-    if (uploadedFiles.length === 0) {
+
+    const allFiles = getAllUploadedFiles();
+
+    if (allFiles.length === 0) {
       setFileError('Please upload all required documents before submitting.');
       return;
     }
-    if (uploadedFiles.length < requiredDocs.length) {
+    if (isBusinessPermit && !businessPermitUploaded) {
+      const missing = requiredDocs.filter(doc => !businessPermitFiles[doc]);
+      setFileError(`Missing: ${missing.join(', ')}.`);
+      return;
+    }
+    if (!isBusinessPermit && uploadedFiles.length < requiredDocs.length) {
       setFileError(`Please upload at least ${requiredDocs.length} document(s): ${requiredDocs.join(', ')}.`);
       return;
     }
@@ -178,13 +251,14 @@ const ResidentPortal: React.FC = () => {
         certificateType: certificateType as CertificateType,
         purpose,
         status: 'Pending',
-        validIdFile: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.file.name).join(', ') : undefined,
-        uploadedPhotos: uploadedFiles.length > 0 ? uploadedFiles.map(f => f.preview) : undefined,
+        validIdFile: allFiles.map(f => f.file.name).join(', '),
+        uploadedPhotos: allFiles.map(f => f.preview),
       });
 
       setCertificateType('');
       setPurpose('');
       setUploadedFiles([]);
+      setBusinessPermitFiles({});
       setIsModalOpen(false);
     } catch (err) {
       console.error('Error submitting request:', err);
@@ -261,7 +335,7 @@ const ResidentPortal: React.FC = () => {
                 <form onSubmit={handleSubmitRequest} className="space-y-4">
                   <div>
                     <Label>Certificate Type</Label>
-                    <Select value={certificateType} onValueChange={(v) => setCertificateType(v as CertificateType)}>
+                    <Select value={certificateType} onValueChange={(v) => { setCertificateType(v as CertificateType); setUploadedFiles([]); setBusinessPermitFiles({}); setFileError(''); }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select certificate type" />
                       </SelectTrigger>
@@ -373,56 +447,108 @@ const ResidentPortal: React.FC = () => {
                             <Label>Upload Requirements</Label>
                             <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
                               <p className="text-xs font-semibold text-foreground mb-1">Required Documents for {certificateType}:</p>
-                              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5">
-                                {requiredDocs.map((doc, i) => (
-                                  <li key={doc} className={uploadedFiles.length > i ? 'text-success font-medium' : ''}>
-                                    {doc} {uploadedFiles.length > i ? '✓' : '(required)'}
-                                  </li>
-                                ))}
-                              </ul>
-                              <p className="text-[10px] text-muted-foreground mt-2">
-                                Uploaded: {uploadedFiles.length} / {requiredDocs.length} required · Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
                               </p>
                               <p className="text-[10px] text-muted-foreground mt-1">
                                 <span className="font-semibold">Accepted Gov't IDs:</span> National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card
                               </p>
                             </div>
-                            <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-1 ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
-                              {validatingFile ? (
-                                <>
-                                  <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
-                                  <span className="text-sm text-muted-foreground">Verifying document with AI...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                                  <span className="text-sm text-muted-foreground">Click to upload photos</span>
-                                  <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
-                                </>
-                              )}
-                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
-                            </label>
+
+                            {isBusinessPermit ? (
+                              <div className="space-y-3 mt-2">
+                                {requiredDocs.map((doc) => {
+                                  const uploaded = businessPermitFiles[doc];
+                                  return (
+                                    <div key={doc} className="border rounded-lg p-3 bg-card">
+                                      <p className="text-xs font-semibold text-foreground mb-2">
+                                        {doc} {uploaded ? <span className="text-success">✓</span> : <span className="text-destructive">(required)</span>}
+                                      </p>
+                                      {uploaded ? (
+                                        <div className="relative group inline-block">
+                                          <img src={uploaded.preview} alt={doc} className="w-24 h-16 object-cover rounded-lg border" />
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => removeBusinessPermitFile(doc)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                          <p className="text-[10px] text-muted-foreground truncate mt-0.5 max-w-[96px]">{uploaded.file.name}</p>
+                                        </div>
+                                      ) : (
+                                        <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                                          {validatingFile && doc === 'Valid Government-Issued ID' ? (
+                                            <>
+                                              <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                                              <span className="text-xs text-muted-foreground">Verifying ID...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                                              <span className="text-xs text-muted-foreground">Upload {doc}</span>
+                                            </>
+                                          )}
+                                          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
+                                        </label>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <>
+                                <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5 mb-2">
+                                  {requiredDocs.map((doc, i) => (
+                                    <li key={doc} className={uploadedFiles.length > i ? 'text-success font-medium' : ''}>
+                                      {doc} {uploadedFiles.length > i ? '✓' : '(required)'}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <p className="text-[10px] text-muted-foreground mb-2">
+                                  Uploaded: {uploadedFiles.length} / {requiredDocs.length} required
+                                </p>
+                                <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                                  {validatingFile ? (
+                                    <>
+                                      <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                                      <span className="text-sm text-muted-foreground">Verifying document with AI...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                                      <span className="text-sm text-muted-foreground">Click to upload photos</span>
+                                      <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
+                                    </>
+                                  )}
+                                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
+                                </label>
+                                {uploadedFiles.length > 0 && (
+                                  <div className="mt-2 grid grid-cols-3 gap-2">
+                                    {uploadedFiles.map((item, index) => (
+                                      <div key={index} className="relative group">
+                                        <img src={item.preview} alt={`Upload ${index + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                                        <Button
+                                          type="button"
+                                          variant="destructive"
+                                          size="icon"
+                                          className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={() => removeFile(index)}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.file.name}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            )}
+
                             {fileError && (
                               <p className="text-xs text-destructive mt-1">{fileError}</p>
-                            )}
-                            {uploadedFiles.length > 0 && (
-                              <div className="mt-2 grid grid-cols-3 gap-2">
-                                {uploadedFiles.map((item, index) => (
-                                  <div key={index} className="relative group">
-                                    <img src={item.preview} alt={`Upload ${index + 1}`} className="w-full h-20 object-cover rounded-lg border" />
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="icon"
-                                      className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeFile(index)}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.file.name}</p>
-                                  </div>
-                                ))}
-                              </div>
                             )}
                           </div>
                         </div>
@@ -434,7 +560,7 @@ const ResidentPortal: React.FC = () => {
                     <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={submitting || !certificateType || (!!certificateType && uploadedFiles.length < requiredDocs.length)}>
+                    <Button type="submit" disabled={submitting || !certificateType || !!missingUploads}>
                       {submitting ? 'Submitting...' : 'Submit Request'}
                     </Button>
                   </div>
