@@ -152,12 +152,6 @@ const ResidentPortal: React.FC = () => {
     if (type === 'Business Permit') {
       docs.push('Proof of Business Registration', 'Barangay Clearance', 'Cedula');
     }
-    if (type === 'Certificate of Indigency') {
-      docs.push('Certificate of No Income / Affidavit');
-    }
-    if (type === 'Certificate of Low Income') {
-      docs.push('Proof of Income / Payslip');
-    }
     return docs;
   };
 
