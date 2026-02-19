@@ -58,6 +58,7 @@ const ResidentPortal: React.FC = () => {
   const [fileError, setFileError] = useState('');
   const [validatingFile, setValidatingFile] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<CertificateRequest | null>(null);
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const { toast } = useToast();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -687,7 +688,7 @@ const ResidentPortal: React.FC = () => {
                         <Label className="text-muted-foreground text-xs">Uploaded Photos</Label>
                         <div className="mt-2 grid grid-cols-3 gap-2">
                           {viewingRequest.uploadedPhotos.map((photo, i) => (
-                            <img key={i} src={photo} alt={`Document ${i + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                            <img key={i} src={photo} alt={`Document ${i + 1}`} className="w-full h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setViewingPhoto(photo)} />
                           ))}
                         </div>
                       </div>
@@ -699,6 +700,15 @@ const ResidentPortal: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Photo Viewer Dialog */}
+      <Dialog open={!!viewingPhoto} onOpenChange={() => setViewingPhoto(null)}>
+        <DialogContent className="max-w-2xl p-2">
+          {viewingPhoto && (
+            <img src={viewingPhoto} alt="Full view" className="w-full h-auto rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
