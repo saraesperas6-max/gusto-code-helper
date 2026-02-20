@@ -1,15 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Clock, 
   CheckCircle, 
   Users, 
   Award,
   FileText,
-  UserPlus,
   Eye,
   ThumbsUp,
   ThumbsDown,
-  X
+  X,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import Topbar from '@/components/Topbar';
 import { useData } from '@/context/DataContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, 
@@ -46,7 +48,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const DashboardPage: React.FC = () => {
-  const { getPendingCount, getTotalResidents, requests, notifications, updateRequestStatus } = useData();
+  const { getPendingCount, getTotalResidents, requests, notifications, updateRequestStatus, residents } = useData();
   const navigate = useNavigate();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
@@ -104,20 +106,52 @@ const DashboardPage: React.FC = () => {
     return MONTH_NAMES.map((name, i) => ({ name, requests: counts[i] }));
   }, [requests]);
 
-  // Recent activities derived from requests, sorted by date
+  // Fetch activity logs (login/logout)
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const fetchLogs = async () => {
+      const { data } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setActivityLogs(data || []);
+    };
+    fetchLogs();
+  }, []);
+
+  // Combine request activities + login/logout logs
   const recentActivities = useMemo(() => {
-    return [...requests]
-      .sort((a, b) => new Date(b.dateRequested).getTime() - new Date(a.dateRequested).getTime())
-      .slice(0, 5)
-      .map(r => ({
-        id: r.id,
-        icon: r.status === 'Approved' ? CheckCircle : r.status === 'Denied' ? ThumbsDown : FileText,
-        name: `${r.certificateType} - ${r.status}`,
-        description: `${r.residentName} — ${r.purpose}`,
-        date: new Date(r.dateRequested).toLocaleDateString(),
-        status: r.status,
-      }));
-  }, [requests]);
+    const requestActivities = requests.slice(0, 5).map(r => ({
+      id: r.id,
+      icon: r.status === 'Approved' ? CheckCircle : r.status === 'Denied' ? ThumbsDown : FileText,
+      name: `${r.certificateType} - ${r.status}`,
+      description: `${r.residentName} — ${r.purpose}`,
+      date: new Date(r.dateRequested).toLocaleDateString(),
+      time: new Date(r.dateRequested).getTime(),
+      status: r.status,
+      type: 'request' as const,
+    }));
+
+    const profileMap: Record<string, string> = {};
+    residents.forEach(r => { profileMap[r.id] = `${r.firstName} ${r.lastName}`; });
+
+    const authActivities = activityLogs.map(log => ({
+      id: log.id,
+      icon: log.action === 'login' ? LogIn : LogOut,
+      name: log.action === 'login' ? 'User Logged In' : 'User Logged Out',
+      description: profileMap[log.user_id] || log.user_id.slice(0, 8),
+      date: new Date(log.created_at).toLocaleDateString(),
+      time: new Date(log.created_at).getTime(),
+      status: 'info' as const,
+      type: 'auth' as const,
+    }));
+
+    return [...requestActivities, ...authActivities]
+      .sort((a, b) => b.time - a.time)
+      .slice(0, 10);
+  }, [requests, activityLogs, residents]);
 
   const handleApprove = (id: string) => {
     updateRequestStatus(id, 'Approved');
@@ -129,7 +163,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div>
-      <Topbar searchPlaceholder="Search..." />
+      <Topbar hideSearch />
       
       <h2 className="text-2xl font-bold text-foreground mb-6">Dashboard Overview</h2>
 
@@ -288,34 +322,36 @@ const DashboardPage: React.FC = () => {
                   <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
                 </div>
                 <span className="text-sm text-muted-foreground whitespace-nowrap">{activity.date}</span>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedRequest(activity.id)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {activity.status === 'Pending' && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleApprove(activity.id)}
-                      >
-                        <ThumbsUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeny(activity.id)}
-                      >
-                        <ThumbsDown className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {activity.type === 'request' && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedRequest(activity.id)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {activity.status === 'Pending' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="bg-success hover:bg-success/90"
+                          onClick={() => handleApprove(activity.id)}
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeny(activity.id)}
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
