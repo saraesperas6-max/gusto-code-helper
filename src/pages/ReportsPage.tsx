@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, Calendar, Users } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -30,51 +30,55 @@ import {
 
 const ReportsPage: React.FC = () => {
   const { requests, residents } = useData();
+  const [searchQuery, setSearchQuery] = useState('');
   
   const approvedRequests = requests.filter(r => r.status === 'Approved');
-  const totalHouseholds = Math.ceil(residents.filter(r => r.status === 'Active').length / 2); // Estimate
   const requestsYTD = approvedRequests.length;
   const totalResidents = residents.filter(r => r.status === 'Active').length;
 
-  // Monthly data for charts
-  const monthlyData = [
-    { name: 'Jan', certificates: 5, residents: 45 },
-    { name: 'Feb', certificates: 8, residents: 48 },
-    { name: 'Mar', certificates: 12, residents: 52 },
-    { name: 'Apr', certificates: 7, residents: 55 },
-    { name: 'May', certificates: 10, residents: 58 },
-    { name: 'Jun', certificates: 6, residents: 60 },
-  ];
+  const filteredApprovedRequests = useMemo(() => {
+    if (!searchQuery.trim()) return approvedRequests;
+    const q = searchQuery.toLowerCase();
+    return approvedRequests.filter(r =>
+      r.residentName.toLowerCase().includes(q) ||
+      r.certificateType.toLowerCase().includes(q) ||
+      r.purpose.toLowerCase().includes(q)
+    );
+  }, [approvedRequests, searchQuery]);
 
-  // Pie chart data for certificate types
-  const certificateTypeData = [
-    { name: 'Barangay Clearance', value: 35, color: '#3b82f6' },
-    { name: 'Certificate of Residency', value: 25, color: '#22c55e' },
-    { name: 'Certificate of Indigency', value: 20, color: '#eab308' },
-    { name: 'Business Permit', value: 15, color: '#ef4444' },
-    { name: 'Others', value: 5, color: '#8b5cf6' },
-  ];
+  // Monthly data derived from actual requests
+  const monthlyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const counts: Record<string, number> = {};
+    months.forEach(m => { counts[m] = 0; });
+    approvedRequests.forEach(r => {
+      const date = r.dateProcessed ? new Date(r.dateProcessed) : new Date(r.dateRequested);
+      const monthName = months[date.getMonth()];
+      counts[monthName]++;
+    });
+    return months.map(name => ({ name, certificates: counts[name] }));
+  }, [approvedRequests]);
+
+  // Pie chart data derived from actual requests
+  const certificateTypeData = useMemo(() => {
+    const colors = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#ec4899'];
+    const typeCounts: Record<string, number> = {};
+    approvedRequests.forEach(r => {
+      typeCounts[r.certificateType] = (typeCounts[r.certificateType] || 0) + 1;
+    });
+    return Object.entries(typeCounts).map(([name, value], i) => ({
+      name, value, color: colors[i % colors.length],
+    }));
+  }, [approvedRequests]);
 
   return (
     <div>
-      <Topbar searchPlaceholder="Search Reports..." />
+      <Topbar searchPlaceholder="Search Reports..." onSearch={setSearchQuery} />
       
       <h2 className="text-2xl font-bold text-foreground mb-6">Barangay Reports and Summaries</h2>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <Home className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Households</p>
-              <p className="text-3xl font-bold">{totalHouseholds}</p>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
             <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
@@ -122,69 +126,37 @@ const ReportsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Line Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Population Growth Trend (Line Chart)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="residents" 
-                    stroke="hsl(220, 70%, 50%)" 
-                    strokeWidth={3}
-                    dot={{ fill: 'hsl(220, 70%, 50%)', strokeWidth: 2, r: 5 }}
-                    name="Residents"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="certificates" 
-                    stroke="hsl(145, 55%, 42%)" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(145, 55%, 42%)', strokeWidth: 2, r: 4 }}
-                    name="Certificates"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Pie Chart */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold">Certificate Types Distribution (Pie Chart)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-72 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={certificateTypeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={3}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={true}
-                  >
-                    {certificateTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="h-64 flex items-center justify-center">
+              {certificateTypeData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={certificateTypeData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={true}
+                    >
+                      {certificateTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm">No data yet.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -206,7 +178,7 @@ const ReportsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {approvedRequests.map((request) => (
+              {filteredApprovedRequests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>
                     {request.dateProcessed 
@@ -219,10 +191,10 @@ const ReportsPage: React.FC = () => {
                   <TableCell>{request.purpose}</TableCell>
                 </TableRow>
               ))}
-              {approvedRequests.length === 0 && (
+              {filteredApprovedRequests.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    No certificates issued yet.
+                    {searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
                   </TableCell>
                 </TableRow>
               )}
