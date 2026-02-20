@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import CertificatePreview from '@/components/CertificatePreview';
 import { useTheme } from '@/context/ThemeContext';
 import { CertificateRequest, CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
@@ -69,6 +70,7 @@ const ResidentPortal: React.FC = () => {
   const [savingEdit, setSavingEdit] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [deletingPermanentlyId, setDeletingPermanentlyId] = useState<string | null>(null);
+  const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const { toast } = useToast();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -380,42 +382,24 @@ const ResidentPortal: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Sample Certificate Modal */}
-                      <Dialog open={isSampleOpen} onOpenChange={setIsSampleOpen}>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>{certificateType} — Sample Preview</DialogTitle>
-                          </DialogHeader>
-                          <div className="flex flex-col items-center gap-4">
-                            <div className="w-full aspect-[8.5/11] rounded-lg border-2 border-primary/20 bg-card p-6 flex flex-col items-center text-center">
-                              <div className="w-16 h-16 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center mb-3">
-                                <img src={logo} alt="Barangay Logo" className="w-full h-full object-cover" />
-                              </div>
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Republic of the Philippines</p>
-                              <p className="text-[10px] text-muted-foreground">Province / City / Municipality</p>
-                              <p className="text-xs font-bold text-primary mt-1">Barangay Palma-Urbano</p>
-                              <div className="w-16 border-t border-primary/30 my-3" />
-                              <p className="text-sm font-bold text-foreground uppercase tracking-wide">{certificateType}</p>
-                              <div className="mt-4 text-left w-full space-y-2 text-xs text-muted-foreground">
-                                <p>TO WHOM IT MAY CONCERN:</p>
-                                <p className="leading-relaxed">
-                                  This is to certify that <span className="font-semibold text-foreground">JUAN DELA CRUZ</span>, of legal age, Filipino, and a resident of Barangay Palma-Urbano...
-                                </p>
-                                <p className="leading-relaxed">
-                                  {CERTIFICATE_DESCRIPTIONS[certificateType] || 'Official barangay document.'}
-                                </p>
-                              </div>
-                              <div className="mt-auto pt-6 w-full flex justify-end">
-                                <div className="text-center">
-                                  <div className="w-32 border-t border-foreground/50 mb-1" />
-                                  <p className="text-[10px] text-muted-foreground">Barangay Captain</p>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground italic">This is a sample preview only. Actual certificate may differ.</p>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      {/* Sample Certificate Modal — uses CertificatePreview */}
+                      {isSampleOpen && certificateType && (
+                        <CertificatePreview
+                          request={{
+                            id: 'sample',
+                            residentId: user.id,
+                            residentName: residentName,
+                            certificateType: certificateType as CertificateType,
+                            purpose: 'Sample Purpose',
+                            status: 'Approved',
+                            dateRequested: new Date(),
+                            dateProcessed: new Date(),
+                          }}
+                          open={isSampleOpen}
+                          onOpenChange={setIsSampleOpen}
+                          residentAddress={profile.address || 'Palma-Urbano Barangay, Baguio City'}
+                        />
+                      )}
 
                       <hr />
                       <div>
@@ -616,6 +600,11 @@ const ResidentPortal: React.FC = () => {
                           <Button variant="ghost" size="icon" onClick={() => setViewingRequest(request)} title="View submitted form">
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {request.status === 'Approved' && (
+                            <Button variant="ghost" size="icon" onClick={() => setPreviewRequest(request)} title="View Certificate">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </Button>
+                          )}
                           {request.status === 'Pending' && (
                             <>
                               <Button variant="ghost" size="icon" onClick={() => { setEditingRequest(request); setEditPurpose(request.purpose); setEditNotes(request.notes || ''); }} title="Edit request">
@@ -864,6 +853,16 @@ const ResidentPortal: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Certificate Preview */}
+      {previewRequest && (
+        <CertificatePreview
+          request={previewRequest}
+          open={!!previewRequest}
+          onOpenChange={(open) => { if (!open) setPreviewRequest(null); }}
+          residentAddress={profile.address || ''}
+        />
+      )}
 
       {/* Permanent Delete Alert */}
       <AlertDialog open={!!deletingPermanentlyId} onOpenChange={(open) => { if (!open) setDeletingPermanentlyId(null); }}>
