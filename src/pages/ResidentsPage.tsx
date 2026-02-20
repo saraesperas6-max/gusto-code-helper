@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, Check, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Topbar from '@/components/Topbar';
+import DateFilter from '@/components/DateFilter';
 import { useData } from '@/context/DataContext';
 import { Resident } from '@/types/barangay';
 import { cn } from '@/lib/utils';
@@ -32,24 +33,41 @@ const ResidentsPage: React.FC = () => {
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   
   const [formData, setFormData] = useState({
     lastName: '', firstName: '', middleName: '', age: '', address: '', contact: '', email: '', password: '',
   });
 
-  const filteredResidents = residents.filter(
-    (r) =>
-      r.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredResidents = useMemo(() => {
+    let result = residents.filter(
+      (r) =>
+        r.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    if (dateFilters.month !== null) {
+      result = result.filter(r => new Date(r.createdAt).getMonth() === dateFilters.month);
+    }
+    if (dateFilters.date) {
+      const d = dateFilters.date;
+      result = result.filter(r => {
+        const rd = new Date(r.createdAt);
+        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth() && rd.getDate() === d.getDate();
+      });
+    }
+    return result.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+  }, [residents, searchTerm, dateFilters]);
 
-  const filteredTrashedResidents = trashedResidents.filter(
-    (r) =>
-      r.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTrashedResidents = useMemo(() => {
+    let result = trashedResidents.filter(
+      (r) =>
+        r.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return result.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+  }, [trashedResidents, searchTerm]);
 
   const resetForm = () => {
     setFormData({ lastName: '', firstName: '', middleName: '', age: '', address: '', contact: '', email: '', password: '' });
@@ -213,8 +231,11 @@ const ResidentsPage: React.FC = () => {
       <Topbar searchPlaceholder="Search residents..." onSearch={setSearchTerm} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Registered Residents & Signups</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <CardTitle>Registered Residents & Signups</CardTitle>
+            <DateFilter onFilterChange={setDateFilters} />
+          </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Eye, Check, X, Undo2, FileText } from 'lucide-react';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Topbar from '@/components/Topbar';
+import DateFilter from '@/components/DateFilter';
 import { useData } from '@/context/DataContext';
 import { CertificateRequest, CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
@@ -41,6 +42,7 @@ const RequestsPage: React.FC = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<CertificateRequest | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
@@ -70,11 +72,24 @@ const RequestsPage: React.FC = () => {
     }
   }, [searchParams, requests, setSearchParams]);
 
-  const filteredRequests = requests.filter(
-    (r) =>
-      r.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.certificateType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRequests = useMemo(() => {
+    let result = requests.filter(
+      (r) =>
+        r.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.certificateType.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    if (dateFilters.month !== null) {
+      result = result.filter(r => new Date(r.dateRequested).getMonth() === dateFilters.month);
+    }
+    if (dateFilters.date) {
+      const d = dateFilters.date;
+      result = result.filter(r => {
+        const rd = new Date(r.dateRequested);
+        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth() && rd.getDate() === d.getDate();
+      });
+    }
+    return result.sort((a, b) => a.residentName.localeCompare(b.residentName));
+  }, [requests, searchTerm, dateFilters]);
 
   const activeResidents = residents.filter((r) => r.status === 'Active');
 
@@ -226,8 +241,11 @@ const RequestsPage: React.FC = () => {
       <Topbar searchPlaceholder="Search requests..." onSearch={setSearchTerm} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Certificate Requests</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <CardTitle>Certificate Requests</CardTitle>
+            <DateFilter onFilterChange={setDateFilters} />
+          </div>
           <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
             <DialogTrigger asChild>
               <Button>
