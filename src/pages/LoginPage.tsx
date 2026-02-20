@@ -27,10 +27,6 @@ const LoginPage: React.FC = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotStep, setForgotStep] = useState<'email' | 'otp' | 'newPassword'>('email');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   // Sign up fields
   const [firstName, setFirstName] = useState('');
@@ -116,74 +112,15 @@ const LoginPage: React.FC = () => {
     setSuccess('');
     setForgotLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail);
-
-    setForgotLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess('A one-time password (OTP) has been sent to your email.');
-      setForgotStep('otp');
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    if (otp.length !== 6) {
-      setError('Please enter the 6-digit OTP.');
-      return;
-    }
-    setForgotLoading(true);
-
-    const { error } = await supabase.auth.verifyOtp({
-      email: forgotEmail,
-      token: otp,
-      type: 'recovery',
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     setForgotLoading(false);
     if (error) {
       setError(error.message);
     } else {
-      setSuccess('OTP verified! Set your new password.');
-      setForgotStep('newPassword');
-    }
-  };
-
-  const handleSetNewPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    setForgotLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setForgotLoading(false);
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess('Password updated successfully! You can now log in.');
-      await supabase.auth.signOut();
-      setTimeout(() => {
-        setShowForgotPassword(false);
-        setForgotStep('email');
-        setForgotEmail('');
-        setOtp('');
-        setNewPassword('');
-        setConfirmNewPassword('');
-        setSuccess('');
-      }, 2000);
+      setSuccess('A password reset link has been sent to your email. Please check your inbox.');
     }
   };
 
@@ -209,10 +146,6 @@ const LoginPage: React.FC = () => {
     setAddress('');
     setContact('');
     setShowForgotPassword(false);
-    setForgotStep('email');
-    setOtp('');
-    setNewPassword('');
-    setConfirmNewPassword('');
     setCaptchaVerified(false);
   };
 
@@ -243,66 +176,22 @@ const LoginPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           {showForgotPassword ? (
-            <>
-              {forgotStep === 'email' && (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Enter your email and we'll send you a one-time password (OTP).</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="forgotEmail">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="forgotEmail" type="email" placeholder="Enter your email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} className="pl-10" required />
-                    </div>
-                  </div>
-                  {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                  {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
-                  <Button type="submit" className="w-full" disabled={forgotLoading}>{forgotLoading ? 'Sending...' : 'Send OTP'}</Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    <button type="button" className="text-primary font-medium hover:underline" onClick={() => { setShowForgotPassword(false); setForgotStep('email'); setError(''); setSuccess(''); }}>Back to Login</button>
-                  </p>
-                </form>
-              )}
-              {forgotStep === 'otp' && (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Enter the 6-digit OTP sent to <strong>{forgotEmail}</strong>.</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="otpCode">OTP Code</Label>
-                    <Input id="otpCode" type="text" inputMode="numeric" maxLength={6} placeholder="Enter 6-digit OTP" value={otp} onChange={(e) => { const v = e.target.value; if (v === '' || /^\d{0,6}$/.test(v)) setOtp(v); }} className="text-center tracking-widest text-lg" required />
-                  </div>
-                  {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                  {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
-                  <Button type="submit" className="w-full" disabled={forgotLoading || otp.length !== 6}>{forgotLoading ? 'Verifying...' : 'Verify OTP'}</Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    <button type="button" className="text-primary font-medium hover:underline" onClick={() => { setForgotStep('email'); setOtp(''); setError(''); setSuccess(''); }}>Resend OTP</button>
-                  </p>
-                </form>
-              )}
-              {forgotStep === 'newPassword' && (
-                <form onSubmit={handleSetNewPassword} className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Set your new password below.</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPwd">New Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="newPwd" type={showPassword ? 'text' : 'password'} placeholder="Min. 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pl-10 pr-10" required />
-                      <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmNewPwd">Confirm Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="confirmNewPwd" type={showPassword ? 'text' : 'password'} placeholder="Confirm new password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="pl-10 pr-10" required />
-                    </div>
-                  </div>
-                  {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                  {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
-                  <Button type="submit" className="w-full" disabled={forgotLoading}>{forgotLoading ? 'Updating...' : 'Save New Password'}</Button>
-                </form>
-              )}
-            </>
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <p className="text-sm text-muted-foreground">Enter your email and we'll send you a password reset link.</p>
+              <div className="space-y-2">
+                <Label htmlFor="forgotEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input id="forgotEmail" type="email" placeholder="Enter your email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} className="pl-10" required />
+                </div>
+              </div>
+              {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+              {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
+              <Button type="submit" className="w-full" disabled={forgotLoading}>{forgotLoading ? 'Sending...' : 'Send Reset Link'}</Button>
+              <p className="text-center text-sm text-muted-foreground">
+                <button type="button" className="text-primary font-medium hover:underline" onClick={() => { setShowForgotPassword(false); setError(''); setSuccess(''); }}>Back to Login</button>
+              </p>
+            </form>
           ) : !isSignUp ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
