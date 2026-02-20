@@ -105,9 +105,40 @@ const RequestsPage: React.FC = () => {
     setLoading(false);
   };
 
+  const sendNotificationEmail = async (requestId: string, status: string, residentEmail: string, residentName: string, certificateType: string, denialReason?: string) => {
+    try {
+      await supabase.functions.invoke('send-notification', {
+        body: { requestId, status, residentEmail, residentName, certificateType, denialReason },
+      });
+    } catch (err) {
+      console.error('Failed to send notification email:', err);
+    }
+  };
+
   const handleStatusUpdate = async (id: string, status: RequestStatus) => {
     try {
-      await updateRequestStatus(id, status);
+      const request = requests.find(r => r.id === id);
+      const resident = request ? residents.find(r => r.id === request.residentId) : null;
+
+      if (status === 'Approved') {
+        // Set 3-day claim deadline
+        const claimDeadline = new Date();
+        claimDeadline.setDate(claimDeadline.getDate() + 3);
+        await supabase.from('certificate_requests').update({
+          status: 'Approved' as any,
+          date_processed: new Date().toISOString(),
+          claim_deadline: claimDeadline.toISOString(),
+        }).eq('id', id);
+        await refreshData();
+      } else {
+        await updateRequestStatus(id, status);
+      }
+
+      // Send email notification
+      if (request && resident) {
+        await sendNotificationEmail(id, status, resident.email, `${resident.firstName} ${resident.lastName}`, request.certificateType);
+      }
+
       toast({ title: `Request ${status.toLowerCase()}` });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -129,7 +160,14 @@ const RequestsPage: React.FC = () => {
         date_processed: new Date().toISOString(),
       }).eq('id', denyTargetId);
       await refreshData();
-      // Update selected request if viewing it
+
+      // Send denial email notification
+      const request = requests.find(r => r.id === denyTargetId);
+      const resident = request ? residents.find(r => r.id === request.residentId) : null;
+      if (request && resident) {
+        await sendNotificationEmail(denyTargetId, 'Denied', resident.email, `${resident.firstName} ${resident.lastName}`, request.certificateType, denialReason.trim());
+      }
+
       if (selectedRequest?.id === denyTargetId) {
         setSelectedRequest({ ...selectedRequest, status: 'Denied' });
       }

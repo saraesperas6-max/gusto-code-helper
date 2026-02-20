@@ -38,6 +38,7 @@ export type Database = {
       certificate_requests: {
         Row: {
           certificate_type: Database["public"]["Enums"]["certificate_type"]
+          claim_deadline: string | null
           created_at: string
           date_processed: string | null
           date_requested: string
@@ -54,6 +55,7 @@ export type Database = {
         }
         Insert: {
           certificate_type: Database["public"]["Enums"]["certificate_type"]
+          claim_deadline?: string | null
           created_at?: string
           date_processed?: string | null
           date_requested?: string
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          claim_deadline?: string | null
           created_at?: string
           date_processed?: string | null
           date_requested?: string
