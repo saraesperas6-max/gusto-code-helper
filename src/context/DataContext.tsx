@@ -44,7 +44,7 @@ const mapProfileToResident = (p: Profile): Resident => ({
   createdAt: new Date(p.created_at),
 });
 
-const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateRequest => {
+const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateRequest & { denialReason?: string } => {
   const profile = profileMap[r.resident_id];
   const name = profile
     ? `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim()
@@ -61,6 +61,7 @@ const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateR
     dateProcessed: r.date_processed ? new Date(r.date_processed) : undefined,
     validIdFile: r.valid_id_file || undefined,
     uploadedPhotos: r.documents && Array.isArray(r.documents) && r.documents.length > 0 ? r.documents as string[] : undefined,
+    denialReason: r.denial_reason || undefined,
   };
 };
 

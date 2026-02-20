@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Check, X } from 'lucide-react';
+import { Plus, Eye, Check, X, Undo2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -21,6 +24,7 @@ import { useData } from '@/context/DataContext';
 import { CertificateRequest, CertificateType, RequestStatus } from '@/types/barangay';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const CERTIFICATE_TYPES: CertificateType[] = [
   'Barangay Clearance',
@@ -32,7 +36,7 @@ const CERTIFICATE_TYPES: CertificateType[] = [
 ];
 
 const RequestsPage: React.FC = () => {
-  const { requests, residents, addRequest, updateRequestStatus } = useData();
+  const { requests, residents, addRequest, updateRequestStatus, refreshData } = useData();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,7 +44,12 @@ const RequestsPage: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<CertificateRequest | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+  const [denyDialogOpen, setDenyDialogOpen] = useState(false);
+  const [denyTargetId, setDenyTargetId] = useState<string | null>(null);
+  const [denialReason, setDenialReason] = useState('');
+  const [undoDialogOpen, setUndoDialogOpen] = useState(false);
+  const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
+
   const [selectedResident, setSelectedResident] = useState('');
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
   const [purpose, setPurpose] = useState('');
@@ -103,6 +112,59 @@ const RequestsPage: React.FC = () => {
     }
   };
 
+  const openDenyDialog = (id: string) => {
+    setDenyTargetId(id);
+    setDenialReason('');
+    setDenyDialogOpen(true);
+  };
+
+  const handleDenyWithReason = async () => {
+    if (!denyTargetId || !denialReason.trim()) return;
+    try {
+      await supabase.from('certificate_requests').update({
+        status: 'Denied' as any,
+        denial_reason: denialReason.trim(),
+        date_processed: new Date().toISOString(),
+      }).eq('id', denyTargetId);
+      await refreshData();
+      // Update selected request if viewing it
+      if (selectedRequest?.id === denyTargetId) {
+        setSelectedRequest({ ...selectedRequest, status: 'Denied' });
+      }
+      toast({ title: 'Request denied' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setDenyDialogOpen(false);
+    setDenyTargetId(null);
+    setDenialReason('');
+  };
+
+  const openUndoDialog = (id: string) => {
+    setUndoTargetId(id);
+    setUndoDialogOpen(true);
+  };
+
+  const handleUndo = async () => {
+    if (!undoTargetId) return;
+    try {
+      await supabase.from('certificate_requests').update({
+        status: 'Pending' as any,
+        denial_reason: null,
+        date_processed: null,
+      }).eq('id', undoTargetId);
+      await refreshData();
+      if (selectedRequest?.id === undoTargetId) {
+        setSelectedRequest({ ...selectedRequest, status: 'Pending' });
+      }
+      toast({ title: 'Request reverted to Pending' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setUndoDialogOpen(false);
+    setUndoTargetId(null);
+  };
+
   const getStatusBadge = (status: RequestStatus) => {
     const variants: Record<RequestStatus, string> = {
       Pending: 'bg-warning text-warning-foreground',
@@ -110,6 +172,13 @@ const RequestsPage: React.FC = () => {
       Denied: 'bg-destructive text-destructive-foreground',
     };
     return <Badge className={variants[status]}>{status}</Badge>;
+  };
+
+  // Helper to get denial reason from raw request data
+  const getDenialReason = (requestId: string): string | null => {
+    // We'll fetch it from the request object if available
+    const req = requests.find(r => r.id === requestId);
+    return (req as any)?.denialReason || null;
   };
 
   return (
@@ -290,6 +359,12 @@ const RequestsPage: React.FC = () => {
                                   {getStatusBadge(selectedRequest.status)}
                                 </div>
                               </div>
+                              {selectedRequest.status === 'Denied' && (selectedRequest as any).denialReason && (
+                                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                                  <p className="text-sm font-medium text-destructive">Denial Reason</p>
+                                  <p className="text-sm mt-1">{(selectedRequest as any).denialReason}</p>
+                                </div>
+                              )}
                               {selectedRequest.uploadedPhotos && selectedRequest.uploadedPhotos.length > 0 && (
                                 <div>
                                   <p className="text-sm text-muted-foreground mb-2">Uploaded Requirements ({selectedRequest.uploadedPhotos.length} file{selectedRequest.uploadedPhotos.length > 1 ? 's' : ''})</p>
@@ -326,13 +401,21 @@ const RequestsPage: React.FC = () => {
                                   </Button>
                                   <Button 
                                     variant="destructive"
-                                    onClick={() => {
-                                      handleStatusUpdate(selectedRequest.id, 'Denied');
-                                      setSelectedRequest({ ...selectedRequest, status: 'Denied' });
-                                    }}
+                                    onClick={() => openDenyDialog(selectedRequest.id)}
                                   >
                                     <X className="mr-2 h-4 w-4" />
                                     Deny
+                                  </Button>
+                                </div>
+                              )}
+                              {(selectedRequest.status === 'Approved' || selectedRequest.status === 'Denied') && (
+                                <div className="flex justify-center pt-4">
+                                  <Button 
+                                    variant="outline"
+                                    onClick={() => openUndoDialog(selectedRequest.id)}
+                                  >
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Undo — Revert to Pending
                                   </Button>
                                 </div>
                               )}
@@ -352,11 +435,21 @@ const RequestsPage: React.FC = () => {
                           <Button 
                             size="sm" 
                             variant="destructive"
-                            onClick={() => handleStatusUpdate(request.id, 'Denied')}
+                            onClick={() => openDenyDialog(request.id)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </>
+                      )}
+                      {(request.status === 'Approved' || request.status === 'Denied') && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openUndoDialog(request.id)}
+                          title="Undo — Revert to Pending"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </TableCell>
@@ -382,6 +475,48 @@ const RequestsPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Deny Reason Dialog */}
+      <Dialog open={denyDialogOpen} onOpenChange={setDenyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deny Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Reason for Denial <span className="text-destructive">*</span></Label>
+              <Textarea
+                placeholder="Please specify the reason for denying this request..."
+                value={denialReason}
+                onChange={(e) => setDenialReason(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDenyDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDenyWithReason} disabled={!denialReason.trim()}>
+              Confirm Deny
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Undo Confirmation Dialog */}
+      <AlertDialog open={undoDialogOpen} onOpenChange={setUndoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revert this request back to Pending? This will undo the current approval or denial.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUndo}>Confirm Undo</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
