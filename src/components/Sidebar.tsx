@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,6 +10,16 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import logo from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface SidebarProps {
   className?: string;
@@ -19,6 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -33,60 +44,77 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   ];
 
   return (
-    <aside className={cn(
-      "w-64 bg-secondary text-secondary-foreground h-screen fixed left-0 top-0 flex flex-col",
-      className
-    )}>
-      <div className="flex-1">
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 px-6 py-8">
-          <div className="w-14 h-14 rounded-full border-2 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center">
-            <img 
-              src={logo} 
-              alt="Barangay Logo" 
-              className="w-full h-full object-cover"
-            />
+    <>
+      <aside className={cn(
+        "w-64 bg-secondary text-secondary-foreground h-screen fixed left-0 top-0 flex flex-col",
+        className
+      )}>
+        <div className="flex-1">
+          {/* Logo Section */}
+          <div className="flex items-center gap-3 px-6 py-8">
+            <div className="w-14 h-14 rounded-full border-2 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center">
+              <img 
+                src={logo} 
+                alt="Barangay Logo" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h1 className="text-lg font-semibold">Palma-Urbano</h1>
           </div>
-          <h1 className="text-lg font-semibold">Palma-Urbano</h1>
+
+          {/* Navigation */}
+          <nav className="px-4 space-y-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                    isActive 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-sidebar-accent"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+
+            {/* Logout */}
+            <button
+              onClick={() => setShowLogoutDialog(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-warning hover:bg-destructive hover:text-destructive-foreground mt-4"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </nav>
         </div>
 
-        {/* Navigation */}
-        <nav className="px-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
-                  isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-sidebar-accent"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+        {/* Footer */}
+        <div className="text-center py-6 text-sm opacity-60">
+          © 2026 All Rights Reserved.
+        </div>
+      </aside>
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-warning hover:bg-destructive hover:text-destructive-foreground mt-4"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </nav>
-      </div>
-
-      {/* Footer */}
-      <div className="text-center py-6 text-sm opacity-60">
-        © 2026 All Rights Reserved.
-      </div>
-    </aside>
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to log out? You will need to sign in again to access the dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
