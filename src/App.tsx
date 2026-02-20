@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import LoginPage from "./pages/LoginPage";
+import CompleteProfilePage from "./pages/CompleteProfilePage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
 import RequestsPage from "./pages/RequestsPage";
@@ -33,16 +34,28 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole: 'offici
   return <>{children}</>;
 };
 
+const isProfileIncomplete = (profile: any) => {
+  if (!profile) return false;
+  return !profile.age || !profile.address || !profile.contact || !profile.first_name || !profile.last_name;
+};
+
 const AppRoutes = () => {
-  const { user, userRole, isLoading } = useAuth();
+  const { user, userRole, profile, isLoading } = useAuth();
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
+
+  // Redirect residents with incomplete profiles to complete-profile page
+  const needsProfileCompletion = user && userRole === 'resident' && profile && isProfileIncomplete(profile);
 
   return (
     <Routes>
       <Route path="/" element={
         user ? (
-          <Navigate to={userRole === 'admin' ? '/dashboard' : '/portal'} replace />
+          needsProfileCompletion ? (
+            <Navigate to="/complete-profile" replace />
+          ) : (
+            <Navigate to={userRole === 'admin' ? '/dashboard' : '/portal'} replace />
+          )
         ) : (
           <LoginPage />
         )
@@ -56,7 +69,14 @@ const AppRoutes = () => {
         <Route path="reports" element={<ReportsPage />} />
       </Route>
       <Route path="/portal" element={
-        <ProtectedRoute allowedRole="resident"><ResidentPortal /></ProtectedRoute>
+        needsProfileCompletion ? (
+          <Navigate to="/complete-profile" replace />
+        ) : (
+          <ProtectedRoute allowedRole="resident"><ResidentPortal /></ProtectedRoute>
+        )
+      } />
+      <Route path="/complete-profile" element={
+        user && needsProfileCompletion ? <CompleteProfilePage /> : <Navigate to="/" replace />
       } />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<NotFound />} />
