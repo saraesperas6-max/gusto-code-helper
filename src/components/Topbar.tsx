@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
 
 interface TopbarProps {
@@ -23,6 +24,7 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
   const { profile } = useAuth();
   const { notifications, markNotificationRead, markAllNotificationsRead } = useData();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   
   const unreadCount = notifications.filter(n => !n.read).length;
   const userName = profile
@@ -79,7 +81,12 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
                   <div
                     key={notif.id}
                     className={`flex items-start gap-3 p-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!notif.read ? 'bg-primary/5' : ''}`}
-                    onClick={() => markNotificationRead(notif.id)}
+                    onClick={() => {
+                      markNotificationRead(notif.id);
+                      if (notif.requestId) {
+                        navigate(`/dashboard/requests?highlight=${notif.requestId}`);
+                      }
+                    }}
                   >
                     <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
                       notif.type === 'pending' ? 'bg-warning' : 

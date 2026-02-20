@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Eye, Check, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ const CERTIFICATE_TYPES: CertificateType[] = [
 const RequestsPage: React.FC = () => {
   const { requests, residents, addRequest, updateRequestStatus } = useData();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<CertificateRequest | null>(null);
@@ -44,6 +46,18 @@ const RequestsPage: React.FC = () => {
   const [purpose, setPurpose] = useState('');
   const [notes, setNotes] = useState('');
   const [markAsApproved, setMarkAsApproved] = useState(true);
+
+  // Auto-open request from notification highlight param
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId && requests.length > 0) {
+      const req = requests.find(r => r.id === highlightId);
+      if (req) {
+        setSelectedRequest(req);
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, requests, setSearchParams]);
 
   const filteredRequests = requests.filter(
     (r) =>
