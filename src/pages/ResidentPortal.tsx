@@ -72,6 +72,7 @@ const ResidentPortal: React.FC = () => {
   const [deletingPermanentlyId, setDeletingPermanentlyId] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const { toast } = useToast();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -313,7 +314,7 @@ const ResidentPortal: React.FC = () => {
             variant="outline" 
             size="sm" 
             className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-            onClick={handleLogout}
+            onClick={() => setShowLogoutDialog(true)}
           >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
@@ -887,6 +888,20 @@ const ResidentPortal: React.FC = () => {
             }}>
               Delete Forever
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to log out? You will need to sign in again to access your portal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
