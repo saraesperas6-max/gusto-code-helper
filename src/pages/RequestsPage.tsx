@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Check, X, Undo2 } from 'lucide-react';
+import { Plus, Eye, Check, X, Undo2, FileText } from 'lucide-react';
+import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const RequestsPage: React.FC = () => {
   const [denialReason, setDenialReason] = useState('');
   const [undoDialogOpen, setUndoDialogOpen] = useState(false);
   const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
+  const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
 
   const [selectedResident, setSelectedResident] = useState('');
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
@@ -442,14 +444,26 @@ const RequestsPage: React.FC = () => {
                         </>
                       )}
                       {(request.status === 'Approved' || request.status === 'Denied') && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => openUndoDialog(request.id)}
-                          title="Undo — Revert to Pending"
-                        >
-                          <Undo2 className="h-4 w-4" />
-                        </Button>
+                        <>
+                          {request.status === 'Approved' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setPreviewRequest(request)}
+                              title="Preview Certificate"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => openUndoDialog(request.id)}
+                            title="Undo — Revert to Pending"
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -517,6 +531,16 @@ const RequestsPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Certificate Preview Dialog */}
+      {previewRequest && (
+        <CertificatePreview
+          request={previewRequest}
+          open={!!previewRequest}
+          onOpenChange={(open) => { if (!open) setPreviewRequest(null); }}
+          residentAddress={residents.find(r => r.id === previewRequest.residentId)?.address}
+        />
+      )}
     </div>
   );
 };
