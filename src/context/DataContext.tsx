@@ -98,15 +98,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTrashedRequests((trashedData || []).map((r: any) => mapDbRequest(r, profileMap)));
 
       // Derive notifications from recent requests
-      const derivedNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => ({
-        id: r.id,
-        title: r.status === 'Pending' ? 'New Request' : r.status === 'Approved' ? 'Certificate Approved' : 'Request Update',
-        description: `${r.residentName} — ${r.certificateType}`,
-        type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : 'info' as const,
-        time: r.dateRequested.toLocaleDateString(),
-        read: readNotificationIds.has(r.id),
-        requestId: r.id,
-      }));
+      const derivedNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
+        let title = 'Request Update';
+        let description = `${r.residentName} — ${r.certificateType}`;
+
+        if (r.status === 'Pending') {
+          title = 'New Request';
+        } else if (r.status === 'Approved') {
+          title = 'Certificate Approved ✅';
+          description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
+        } else if (r.status === 'Denied') {
+          title = 'Request Denied ❌';
+          description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
+        }
+
+        return {
+          id: r.id,
+          title,
+          description,
+          type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : 'info' as const,
+          time: r.dateRequested.toLocaleDateString(),
+          read: readNotificationIds.has(r.id),
+          requestId: r.id,
+        };
+      });
       setNotifications(derivedNotifications);
     } catch (err) {
       console.error('Error fetching data:', err);
