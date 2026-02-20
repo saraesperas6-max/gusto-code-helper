@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Topbar from '@/components/Topbar';
+import DateFilter from '@/components/DateFilter';
 import { useData } from '@/context/DataContext';
 import { format } from 'date-fns';
 import { 
@@ -31,20 +32,37 @@ import {
 const ReportsPage: React.FC = () => {
   const { requests, residents } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   
   const approvedRequests = requests.filter(r => r.status === 'Approved');
   const requestsYTD = approvedRequests.length;
   const totalResidents = residents.filter(r => r.status === 'Active').length;
 
   const filteredApprovedRequests = useMemo(() => {
-    if (!searchQuery.trim()) return approvedRequests;
-    const q = searchQuery.toLowerCase();
-    return approvedRequests.filter(r =>
-      r.residentName.toLowerCase().includes(q) ||
-      r.certificateType.toLowerCase().includes(q) ||
-      r.purpose.toLowerCase().includes(q)
-    );
-  }, [approvedRequests, searchQuery]);
+    let result = approvedRequests;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r =>
+        r.residentName.toLowerCase().includes(q) ||
+        r.certificateType.toLowerCase().includes(q) ||
+        r.purpose.toLowerCase().includes(q)
+      );
+    }
+    if (dateFilters.month !== null) {
+      result = result.filter(r => {
+        const d = r.dateProcessed ? new Date(r.dateProcessed) : new Date(r.dateRequested);
+        return d.getMonth() === dateFilters.month;
+      });
+    }
+    if (dateFilters.date) {
+      const fd = dateFilters.date;
+      result = result.filter(r => {
+        const d = r.dateProcessed ? new Date(r.dateProcessed) : new Date(r.dateRequested);
+        return d.getFullYear() === fd.getFullYear() && d.getMonth() === fd.getMonth() && d.getDate() === fd.getDate();
+      });
+    }
+    return result.sort((a, b) => a.residentName.localeCompare(b.residentName));
+  }, [approvedRequests, searchQuery, dateFilters]);
 
   // Monthly data derived from actual requests
   const monthlyData = useMemo(() => {
@@ -75,7 +93,10 @@ const ReportsPage: React.FC = () => {
     <div>
       <Topbar searchPlaceholder="Search Reports..." onSearch={setSearchQuery} />
       
-      <h2 className="text-2xl font-bold text-foreground mb-6">Barangay Reports and Summaries</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-4">Barangay Reports and Summaries</h2>
+      <div className="mb-6">
+        <DateFilter onFilterChange={setDateFilters} />
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
