@@ -5,12 +5,16 @@ import { Resident, CertificateRequest, Notification, ResidentStatus, RequestStat
 
 interface DataContextType {
   residents: Resident[];
+  trashedResidents: Resident[];
   requests: CertificateRequest[];
   trashedRequests: CertificateRequest[];
   notifications: Notification[];
   addResident: (resident: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => Promise<void>;
   updateResident: (id: string, data: Partial<Resident>) => Promise<void>;
   deleteResident: (id: string) => Promise<void>;
+  softDeleteResident: (id: string) => Promise<void>;
+  restoreResident: (id: string) => Promise<void>;
+  permanentlyDeleteResident: (id: string) => Promise<void>;
   approveResident: (id: string) => Promise<void>;
   addRequest: (request: Omit<CertificateRequest, 'id' | 'dateRequested'>) => Promise<void>;
   updateRequest: (id: string, data: { purpose?: string; notes?: string }) => Promise<void>;
@@ -68,6 +72,7 @@ const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateR
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, isAdmin, userRole, session } = useAuth();
   const [residents, setResidents] = useState<Resident[]>([]);
+  const [trashedResidents, setTrashedResidents] = useState<Resident[]>([]);
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
   const [trashedRequests, setTrashedRequests] = useState<CertificateRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -84,7 +89,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const profileMap: Record<string, Profile> = {};
       profiles.forEach((p) => { profileMap[p.user_id] = p; });
 
-      setResidents(profiles.map(mapProfileToResident));
+      const activeProfiles = profiles.filter((p) => !(p as any).deleted_at);
+      const deletedProfiles = profiles.filter((p) => !!(p as any).deleted_at);
+      setResidents(activeProfiles.map(mapProfileToResident));
+      setTrashedResidents(deletedProfiles.map(mapProfileToResident));
 
       // Fetch active requests (deleted_at IS NULL — handled by RLS policy)
       const requestsQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
@@ -171,6 +179,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const deleteResident = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: { action: 'delete', userId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    await fetchData();
+  };
+
+  const softDeleteResident = async (userId: string) => {
+    await supabase.from('profiles').update({ deleted_at: new Date().toISOString() } as any).eq('user_id', userId);
+    await fetchData();
+  };
+
+  const restoreResident = async (userId: string) => {
+    await supabase.from('profiles').update({ deleted_at: null } as any).eq('user_id', userId);
+    await fetchData();
+  };
+
+  const permanentlyDeleteResident = async (userId: string) => {
     const { data, error } = await supabase.functions.invoke('admin-users', {
       body: { action: 'delete', userId },
     });
@@ -268,12 +295,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <DataContext.Provider value={{
       residents,
+      trashedResidents,
       requests,
       trashedRequests,
       notifications,
       addResident,
       updateResident,
       deleteResident,
+      softDeleteResident,
+      restoreResident,
+      permanentlyDeleteResident,
       approveResident,
       addRequest,
       updateRequest,
