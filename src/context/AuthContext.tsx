@@ -62,8 +62,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       if (session?.user) {
-        // Use setTimeout to avoid Supabase auth deadlock
         setTimeout(() => fetchProfileAndRole(session.user.id), 0);
+        // Log login event
+        if (event === 'SIGNED_IN') {
+          supabase.from('activity_logs').insert({ user_id: session.user.id, action: 'login' }).then();
+        }
       } else {
         setProfile(null);
         setUserRole(null);
@@ -90,6 +93,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    if (session?.user) {
+      await supabase.from('activity_logs').insert({ user_id: session.user.id, action: 'logout' });
+    }
     await supabase.auth.signOut();
     setSession(null);
     setProfile(null);

@@ -16,9 +16,10 @@ import logo from '@/assets/logo.png';
 interface TopbarProps {
   searchPlaceholder?: string;
   onSearch?: (value: string) => void;
+  hideSearch?: boolean;
 }
 
-const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSearch }) => {
+const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSearch, hideSearch = false }) => {
   const { profile } = useAuth();
   const { notifications, markNotificationRead, markAllNotificationsRead } = useData();
   const { theme, toggleTheme } = useTheme();
@@ -31,15 +32,18 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
   return (
     <div className="bg-card rounded-lg shadow-sm p-4 mb-6 flex items-center justify-between">
       {/* Search */}
-      <div className="relative w-80">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder={searchPlaceholder}
-          className="pl-10 bg-muted/50 border-0"
-          onChange={(e) => onSearch?.(e.target.value)}
-        />
-      </div>
+      {!hideSearch && (
+        <div className="relative w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder={searchPlaceholder}
+            className="pl-10 bg-muted/50 border-0"
+            onChange={(e) => onSearch?.(e.target.value)}
+          />
+        </div>
+      )}
+      {hideSearch && <div />}
 
       {/* Right side */}
       <div className="flex items-center gap-4">
