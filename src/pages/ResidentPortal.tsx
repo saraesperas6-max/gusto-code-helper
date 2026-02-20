@@ -669,6 +669,13 @@ const ResidentPortal: React.FC = () => {
                       )}
                     </div>
 
+                    {viewingRequest.status === 'Denied' && (viewingRequest as any).denialReason && (
+                      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                        <p className="text-sm font-medium text-destructive">Reason for Denial</p>
+                        <p className="text-sm mt-1">{(viewingRequest as any).denialReason}</p>
+                      </div>
+                    )}
+
                     <hr />
 
                     <div>
