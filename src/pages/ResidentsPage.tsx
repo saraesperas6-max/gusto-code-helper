@@ -199,7 +199,6 @@ const ResidentsPage: React.FC = () => {
                 <TableHead>ADDRESS</TableHead>
                 <TableHead>CONTACT</TableHead>
                 <TableHead>EMAIL</TableHead>
-                <TableHead>STATUS</TableHead>
                 <TableHead className="text-center">ACTIONS</TableHead>
               </TableRow>
             </TableHeader>
@@ -218,15 +217,6 @@ const ResidentsPage: React.FC = () => {
                   <TableCell>{resident.address}</TableCell>
                   <TableCell>{resident.contact}</TableCell>
                   <TableCell>{resident.email}</TableCell>
-                  <TableCell>
-                    <Badge className={
-                      resident.status === 'Active' 
-                        ? 'bg-success text-success-foreground' 
-                        : 'bg-warning text-warning-foreground'
-                    }>
-                      {resident.status}
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
                       {resident.status === 'Pending Approval' && (
@@ -290,8 +280,9 @@ const ResidentsPage: React.FC = () => {
                         </DialogContent>
                       </Dialog>
                       <Button 
-                        variant="destructive" 
+                        variant="outline" 
                         size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => handleDelete(resident.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -302,7 +293,7 @@ const ResidentsPage: React.FC = () => {
               ))}
               {filteredResidents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No residents found.
                   </TableCell>
                 </TableRow>
