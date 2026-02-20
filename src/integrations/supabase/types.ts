@@ -42,6 +42,7 @@ export type Database = {
           date_processed: string | null
           date_requested: string
           deleted_at: string | null
+          denial_reason: string | null
           documents: Json | null
           id: string
           notes: string | null
@@ -57,6 +58,7 @@ export type Database = {
           date_processed?: string | null
           date_requested?: string
           deleted_at?: string | null
+          denial_reason?: string | null
           documents?: Json | null
           id?: string
           notes?: string | null
@@ -72,6 +74,7 @@ export type Database = {
           date_processed?: string | null
           date_requested?: string
           deleted_at?: string | null
+          denial_reason?: string | null
           documents?: Json | null
           id?: string
           notes?: string | null
