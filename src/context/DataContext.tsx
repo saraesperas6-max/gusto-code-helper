@@ -72,7 +72,7 @@ const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateR
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user, isAdmin, userRole, session } = useAuth();
+  const { user, userRole } = useAuth();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [trashedResidents, setTrashedResidents] = useState<Resident[]>([]);
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
@@ -80,70 +80,124 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const readNotificationIdsRef = useRef<Set<string>>(new Set());
   const profileMapRef = useRef<Record<string, Profile>>({});
+  const realtimeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build notifications from current data without triggering refetch
-  const buildNotifications = useCallback((mappedRequests: CertificateRequest[], activeProfiles: Profile[]) => {
-    const readIds = readNotificationIdsRef.current;
+  const buildNotifications = useCallback(
+    (
+      mappedRequests: CertificateRequest[],
+      activeProfiles: Profile[],
+      options?: { includeResidentNotifications?: boolean }
+    ) => {
+      const readIds = readNotificationIdsRef.current;
 
-    const requestNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
-      let title = 'Request Update';
-      let description = `${r.residentName} — ${r.certificateType}`;
+      const requestNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
+        let title = 'Request Update';
+        let description = `${r.residentName} — ${r.certificateType}`;
 
-      if (r.status === 'Pending') {
-        title = 'New Request';
-      } else if (r.status === 'Approved') {
-        title = 'Certificate Approved';
-        description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
-      } else if (r.status === 'Denied') {
-        title = 'Request Denied';
-        description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
+        if (r.status === 'Pending') {
+          title = 'New Request';
+        } else if (r.status === 'Approved') {
+          title = 'Certificate Approved';
+          description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
+        } else if (r.status === 'Denied') {
+          title = 'Request Denied';
+          description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
+        }
+
+        return {
+          id: r.id,
+          title,
+          description,
+          type:
+            r.status === 'Pending'
+              ? ('pending' as const)
+              : r.status === 'Approved'
+                ? ('approved' as const)
+                : r.status === 'Denied'
+                  ? ('denied' as const)
+                  : ('info' as const),
+          time: r.dateRequested.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }),
+          read: readIds.has(r.id),
+          requestId: r.id,
+        };
+      });
+
+      if (!options?.includeResidentNotifications) {
+        return requestNotifications;
       }
 
-      return {
-        id: r.id,
-        title,
-        description,
-        type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : r.status === 'Denied' ? 'denied' as const : 'info' as const,
-        time: r.dateRequested.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-        read: readIds.has(r.id),
-        requestId: r.id,
-      };
-    });
+      const pendingResidents = activeProfiles.filter((p) => p.status === 'Pending Approval');
+      const residentNotifications: Notification[] = pendingResidents.map((p) => ({
+        id: `resident-${p.user_id}`,
+        title: 'New Resident Registration',
+        description: `${p.first_name} ${p.last_name} has registered and is awaiting approval.`,
+        type: 'pending' as const,
+        time: new Date(p.created_at).toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        read: readIds.has(`resident-${p.user_id}`),
+      }));
 
-    const pendingResidents = activeProfiles.filter((p) => p.status === 'Pending Approval');
-    const residentNotifications: Notification[] = pendingResidents.map((p) => ({
-      id: `resident-${p.user_id}`,
-      title: 'New Resident Registration',
-      description: `${p.first_name} ${p.last_name} has registered and is awaiting approval.`,
-      type: 'pending' as const,
-      time: new Date(p.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-      read: readIds.has(`resident-${p.user_id}`),
-    }));
-
-    return [...residentNotifications, ...requestNotifications];
-  }, []);
+      return [...residentNotifications, ...requestNotifications];
+    },
+    []
+  );
 
   const fetchData = useCallback(async () => {
     if (!user || !userRole) return;
 
     try {
-      // Fetch profiles
-      const profilesQuery = supabase.from('profiles').select('*');
-      // Fetch active requests
-      const activeReqQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
-      // Fetch trashed requests
-      const trashedReqQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+      const isResident = userRole === 'resident';
 
-      // Run all three queries in parallel
+      const profilesQuery = isResident
+        ? supabase.from('profiles').select('*').eq('user_id', user.id).is('deleted_at', null)
+        : supabase.from('profiles').select('*');
+
+      let activeReqQuery = supabase
+        .from('certificate_requests')
+        .select('*')
+        .is('deleted_at', null)
+        .order('date_requested', { ascending: false });
+
+      let trashedReqQuery = supabase
+        .from('certificate_requests')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (isResident) {
+        activeReqQuery = activeReqQuery.eq('resident_id', user.id);
+        trashedReqQuery = trashedReqQuery.eq('resident_id', user.id);
+      }
+
       const [profilesResult, requestsResult, trashedResult] = await Promise.all([
         profilesQuery,
         activeReqQuery,
         trashedReqQuery,
       ]);
 
+      if (profilesResult.error) throw profilesResult.error;
+      if (requestsResult.error) throw requestsResult.error;
+      if (trashedResult.error) throw trashedResult.error;
+
       const profiles = (profilesResult.data || []) as unknown as Profile[];
       const profileMap: Record<string, Profile> = {};
-      profiles.forEach((p) => { profileMap[p.user_id] = p; });
+      profiles.forEach((p) => {
+        profileMap[p.user_id] = p;
+      });
       profileMapRef.current = profileMap;
 
       const activeProfiles = profiles.filter((p) => !(p as any).deleted_at);
@@ -153,10 +207,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const mappedRequests = (requestsResult.data || []).map((r: any) => mapDbRequest(r, profileMap));
       setRequests(mappedRequests);
-
       setTrashedRequests((trashedResult.data || []).map((r: any) => mapDbRequest(r, profileMap)));
 
-      setNotifications(buildNotifications(mappedRequests, activeProfiles));
+      setNotifications(
+        buildNotifications(mappedRequests, activeProfiles, {
+          includeResidentNotifications: !isResident,
+        })
+      );
     } catch (err) {
       console.error('Error fetching data:', err);
     }
@@ -167,6 +224,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       fetchData();
     } else {
       setResidents([]);
+      setTrashedResidents([]);
       setRequests([]);
       setTrashedRequests([]);
       setNotifications([]);
@@ -177,17 +235,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (!user || !userRole) return;
 
+    const handleRealtimeChange = () => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current);
+      }
+      realtimeRefreshTimerRef.current = setTimeout(() => {
+        fetchData();
+        realtimeRefreshTimerRef.current = null;
+      }, 250);
+    };
+
     const channel = supabase
       .channel('data-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, handleRealtimeChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, handleRealtimeChange)
       .subscribe();
 
     return () => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current);
+        realtimeRefreshTimerRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
   }, [user, userRole, fetchData]);
