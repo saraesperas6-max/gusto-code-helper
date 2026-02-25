@@ -10,7 +10,12 @@ import {
   ThumbsDown,
   X,
   LogIn,
-  LogOut
+  LogOut,
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -398,14 +403,39 @@ const DashboardPage: React.FC = () => {
             if (!req) return <p className="text-muted-foreground">Request not found.</p>;
             return (
               <div className="space-y-5">
+                {/* Resident Profile Section */}
+                {(() => {
+                  const resident = residents.find(r => r.id === req.residentId);
+                  if (!resident) return null;
+                  return (
+                    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border">
+                      <div
+                        className="relative w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors flex-shrink-0"
+                        onClick={() => resident.avatarUrl && setViewingPhoto(resident.avatarUrl)}
+                      >
+                        {resident.avatarUrl ? (
+                          <img src={resident.avatarUrl} alt={req.residentName} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="h-8 w-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="font-semibold text-foreground text-base">{req.residentName}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{resident.email}</span>
+                          {resident.contact && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{resident.contact}</span>}
+                          {resident.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{resident.address}</span>}
+                          {resident.dateOfBirth && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(resident.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div>
                     <p className="text-sm text-primary font-medium">Request ID</p>
                     <p className="font-semibold text-foreground">{req.id.slice(0, 8).toUpperCase()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-primary font-medium">Resident Name</p>
-                    <p className="font-semibold text-foreground">{req.residentName}</p>
                   </div>
                   <div>
                     <p className="text-sm text-primary font-medium">Certificate Type</p>

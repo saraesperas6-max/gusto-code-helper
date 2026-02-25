@@ -24,6 +24,8 @@ export interface Resident {
   password: string;
   status: ResidentStatus;
   createdAt: Date;
+  avatarUrl?: string;
+  dateOfBirth?: string;
 }
 
 export interface CertificateRequest {
