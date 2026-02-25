@@ -43,21 +43,15 @@ const PersonalInformation: React.FC = () => {
     }
   }, [profile]);
 
-  const [cameraLoading, setCameraLoading] = useState(false);
-
   const startCamera = useCallback(async () => {
-    setCameraLoading(true);
-    setCameraOpen(true);
-    setCapturedPhoto(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 640, height: 480 },
       });
       setStream(mediaStream);
-      setCameraLoading(false);
+      setCapturedPhoto(null);
+      setCameraOpen(true);
     } catch {
-      setCameraLoading(false);
-      setCameraOpen(false);
       toast({ title: 'Camera Error', description: 'Unable to access camera.', variant: 'destructive' });
     }
   }, [toast]);
@@ -327,26 +321,15 @@ const PersonalInformation: React.FC = () => {
           <div className="flex flex-col items-center gap-4">
             {!capturedPhoto ? (
               <>
-                <div className="relative w-full aspect-[4/3]">
-                  {cameraLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg border">
-                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-                    </div>
-                  )}
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    onPlaying={() => setCameraLoading(false)}
-                    className={cn(
-                      "w-full rounded-lg border bg-black aspect-[4/3] object-cover",
-                      cameraLoading && "invisible"
-                    )}
-                    style={{ transform: 'scaleX(-1)' }}
-                  />
-                </div>
-                <Button onClick={capturePhoto} disabled={cameraLoading}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full rounded-lg border bg-black aspect-[4/3] object-cover"
+                  style={{ transform: 'scaleX(-1)' }}
+                />
+                <Button onClick={capturePhoto}>
                   <Camera className="h-4 w-4 mr-2" /> Capture
                 </Button>
               </>
