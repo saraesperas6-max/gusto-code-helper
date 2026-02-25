@@ -1,11 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Save, X, User, Calendar, MapPin, Phone, Mail, Hash } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -133,7 +132,7 @@ const PersonalInformation: React.FC = () => {
     setSaving(false);
   };
 
-  const closeModal = () => {
+  const closeSheet = () => {
     setIsOpen(false);
     setIsEditing(false);
     stopCamera();
@@ -145,39 +144,35 @@ const PersonalInformation: React.FC = () => {
 
   return (
     <>
-      {/* Clickable Profile Card */}
-      <Card
-        className="mb-8 cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+      {/* Clickable Profile Trigger — avatar + name inline */}
+      <button
         onClick={() => setIsOpen(true)}
+        className="flex items-center gap-3 cursor-pointer group focus:outline-none"
       >
-        <CardContent className="flex items-center gap-5 p-6">
-          <div className="relative w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <User className="h-8 w-8 text-muted-foreground" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-foreground">{fullName}</h3>
-            <p className="text-sm text-muted-foreground">{profile.email}</p>
-            <p className="text-xs text-muted-foreground mt-1">Tap to view & edit your profile</p>
-          </div>
-          <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-        </CardContent>
-      </Card>
+        <div className="relative w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <User className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{fullName}</p>
+          <p className="text-sm text-muted-foreground">Resident</p>
+        </div>
+      </button>
 
-      {/* Profile Detail Modal */}
-      <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="max-w-md animate-scale-in">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* Profile Sidebar Sheet */}
+      <Sheet open={isOpen} onOpenChange={(open) => !open && closeSheet()}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
               Personal Information
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
 
-          <div className="space-y-5">
+          <div className="space-y-6 py-6">
             {/* Avatar */}
             <div className="flex flex-col items-center gap-3">
               <div className="relative w-24 h-24 rounded-full border-2 border-primary/30 overflow-hidden bg-muted flex items-center justify-center">
@@ -194,7 +189,7 @@ const PersonalInformation: React.FC = () => {
             </div>
 
             {/* Info Fields */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-start gap-3 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div>
@@ -292,7 +287,7 @@ const PersonalInformation: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t">
               {isEditing ? (
                 <>
                   <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
@@ -305,8 +300,8 @@ const PersonalInformation: React.FC = () => {
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Camera Dialog */}
       <Dialog open={cameraOpen} onOpenChange={(open) => { if (!open) stopCamera(); }}>

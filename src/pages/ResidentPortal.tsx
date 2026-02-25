@@ -320,15 +320,12 @@ const ResidentPortal: React.FC = () => {
            </div>
            <span className="font-semibold text-lg text-primary">Palma-Urbano Portal</span>
          </div>
-        <div className="flex items-center gap-4">
-          {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          <div className="text-right">
-            <p className="font-semibold text-foreground">{residentName}</p>
-            <p className="text-sm text-muted-foreground">Resident</p>
-          </div>
+         <div className="flex items-center gap-4">
+           {/* Theme Toggle */}
+           <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
+             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+           </Button>
+           <PersonalInformation />
           <Button 
             variant="outline" 
             size="sm" 
@@ -361,9 +358,6 @@ const ResidentPortal: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Personal Information */}
-        <PersonalInformation />
 
         {/* REQUEST CERTIFICATE - Card Grid */}
         <div className="mb-8">
