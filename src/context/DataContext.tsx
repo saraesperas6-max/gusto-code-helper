@@ -127,7 +127,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           title,
           description,
           type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : r.status === 'Denied' ? 'denied' as const : 'info' as const,
-          time: r.dateRequested.toLocaleDateString(),
+          time: r.dateRequested.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
           read: readNotificationIds.has(r.id),
           requestId: r.id,
         };
