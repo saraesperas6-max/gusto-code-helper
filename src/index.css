@@ -51,15 +51,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar - Softer Teal theme */
-    --sidebar-background: 170 50% 40%;
+    /* Sidebar - Navy Green theme */
+    --sidebar-background: 166 100% 30%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 220 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 170 45% 35%;
+    --sidebar-accent: 166 80% 25%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 170 40% 50%;
-    --sidebar-ring: 220 70% 60%;
+    --sidebar-border: 166 70% 35%;
+    --sidebar-ring: 166 100% 40%;
   }
 
   .dark {
