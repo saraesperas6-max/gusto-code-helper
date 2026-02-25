@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import DashboardSkeleton from '@/components/DashboardSkeleton';
-import {
+import { 
   Clock, 
   CheckCircle, 
   Users, 
@@ -57,7 +56,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const DashboardPage: React.FC = () => {
-  const { getPendingCount, getTotalResidents, requests, notifications, updateRequestStatus, residents, isDataLoading } = useData();
+  const { getPendingCount, getTotalResidents, requests, notifications, updateRequestStatus, residents } = useData();
   const navigate = useNavigate();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
@@ -201,11 +200,6 @@ const DashboardPage: React.FC = () => {
       <Topbar hideSearch />
       
       <h2 className="text-2xl font-bold text-foreground mb-6">Dashboard Overview</h2>
-
-      {isDataLoading ? (
-        <DashboardSkeleton />
-      ) : (
-      <>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -561,8 +555,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-      </>
-      )}
     </div>
   );
 };
