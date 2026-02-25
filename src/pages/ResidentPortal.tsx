@@ -96,7 +96,11 @@ const ResidentPortal: React.FC = () => {
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-  if (!profile || !user) return null;
+  if (!profile || !user) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+    </div>
+  );
 
   const residentName = `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim();
   const myRequests = getResidentRequests(user.id);

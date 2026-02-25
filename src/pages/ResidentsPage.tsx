@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { TableSkeleton } from '@/components/DashboardSkeleton';
 import { Plus, Edit, Trash2, Check, RotateCcw, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSearchParams } from 'react-router-dom';
@@ -29,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 const ResidentsPage: React.FC = () => {
-  const { residents, trashedResidents, addResident, updateResident, softDeleteResident, restoreResident, permanentlyDeleteResident, approveResident } = useData();
+  const { residents, trashedResidents, addResident, updateResident, softDeleteResident, restoreResident, permanentlyDeleteResident, approveResident, isDataLoading } = useData();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -353,6 +354,9 @@ const ResidentsPage: React.FC = () => {
             </TabsList>
 
             <TabsContent value="active">
+              {isDataLoading ? (
+                <TableSkeleton rows={6} cols={6} />
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -434,9 +438,12 @@ const ResidentsPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+              )}
+              {!isDataLoading && (
               <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
                 <span>Showing {filteredResidents.length} of {residents.length} Results</span>
               </div>
+              )}
             </TabsContent>
 
             <TabsContent value="trash">
