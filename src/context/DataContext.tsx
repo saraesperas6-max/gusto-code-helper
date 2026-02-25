@@ -115,10 +115,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (r.status === 'Pending') {
           title = 'New Request';
         } else if (r.status === 'Approved') {
-          title = 'Certificate Approved ✅';
+          title = 'Certificate Approved';
           description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
         } else if (r.status === 'Denied') {
-          title = 'Request Denied ❌';
+          title = 'Request Denied';
           description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
         }
 
