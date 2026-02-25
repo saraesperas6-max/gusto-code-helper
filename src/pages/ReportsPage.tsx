@@ -61,7 +61,11 @@ const ReportsPage: React.FC = () => {
         return d.getFullYear() === fd.getFullYear() && d.getMonth() === fd.getMonth() && d.getDate() === fd.getDate();
       });
     }
-    return result.sort((a, b) => a.residentName.localeCompare(b.residentName));
+    return result.sort((a, b) => {
+      const dateA = a.dateProcessed ? new Date(a.dateProcessed).getTime() : new Date(a.dateRequested).getTime();
+      const dateB = b.dateProcessed ? new Date(b.dateProcessed).getTime() : new Date(b.dateRequested).getTime();
+      return dateB - dateA;
+    });
   }, [approvedRequests, searchQuery, dateFilters]);
 
   // Monthly data derived from actual requests

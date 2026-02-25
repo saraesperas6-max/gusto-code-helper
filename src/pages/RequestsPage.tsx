@@ -104,7 +104,7 @@ const RequestsPage: React.FC = () => {
         return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth() && rd.getDate() === d.getDate();
       });
     }
-    return result.sort((a, b) => a.residentName.localeCompare(b.residentName));
+    return result.sort((a, b) => new Date(b.dateRequested).getTime() - new Date(a.dateRequested).getTime());
   }, [requests, searchTerm, dateFilters]);
 
   const activeResidents = residents.filter((r) => r.status === 'Active');
