@@ -17,16 +17,30 @@ Deno.serve(async (req) => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    const { requestId, status, residentEmail, residentName, certificateType, denialReason } = await req.json();
+    const { requestId, status, residentEmail, residentName, certificateType, denialReason, type } = await req.json();
 
-    if (!requestId || !status || !residentEmail || !residentName || !certificateType) {
-      throw new Error("Missing required fields");
+    if (!residentEmail || !residentName) {
+      throw new Error("Missing required fields: residentEmail, residentName");
     }
 
     let subject: string;
     let htmlBody: string;
 
-    if (status === "Approved") {
+    if (type === "resident-approved") {
+      subject = "Your Resident Account Has Been Approved";
+      htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #16a34a;">Account Approved ✅</h2>
+          <p>Dear <strong>${residentName}</strong>,</p>
+          <p>We are pleased to inform you that your resident account has been <strong>approved</strong> by the Barangay Administration.</p>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="margin: 0; color: #166534;">You now have full access to the Barangay Resident Portal. You can log in to request certificates and access other services.</p>
+          </div>
+          <p>Thank you,<br/>Barangay Administration</p>
+        </div>
+      `;
+    } else if (status === "Approved") {
+      if (!requestId || !certificateType) throw new Error("Missing required fields for certificate notification");
       subject = `Your ${certificateType} Request Has Been Approved`;
       htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -41,6 +55,7 @@ Deno.serve(async (req) => {
         </div>
       `;
     } else if (status === "Denied") {
+      if (!requestId || !certificateType) throw new Error("Missing required fields for certificate notification");
       subject = `Your ${certificateType} Request Has Been Denied`;
       htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -56,7 +71,7 @@ Deno.serve(async (req) => {
         </div>
       `;
     } else {
-      throw new Error(`Unsupported status: ${status}`);
+      throw new Error(`Unsupported notification type`);
     }
 
     // Send email via Resend

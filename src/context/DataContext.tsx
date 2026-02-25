@@ -209,7 +209,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const approveResident = async (userId: string) => {
+    // Get resident profile for email
+    const { data: profile } = await supabase.from('profiles').select('email, first_name, last_name').eq('user_id', userId).single();
+    
     await supabase.from('profiles').update({ status: 'Active' }).eq('user_id', userId);
+
+    // Send approval email notification
+    if (profile?.email) {
+      try {
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'resident-approved',
+            residentEmail: profile.email,
+            residentName: `${profile.first_name} ${profile.last_name}`.trim(),
+          },
+        });
+      } catch (emailErr) {
+        console.error('Failed to send approval email:', emailErr);
+      }
+    }
+
     await fetchData();
   };
 
