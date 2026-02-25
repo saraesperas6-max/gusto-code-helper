@@ -15,7 +15,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import Topbar from '@/components/Topbar';
 import { useData } from '@/context/DataContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +55,11 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [approveTargetId, setApproveTargetId] = useState<string | null>(null);
+  const [denyDialogOpen, setDenyDialogOpen] = useState(false);
+  const [denyTargetId, setDenyTargetId] = useState<string | null>(null);
+  const [denialReason, setDenialReason] = useState('');
 
   const pendingCount = getPendingCount();
   const totalResidents = getTotalResidents();
@@ -153,12 +161,33 @@ const DashboardPage: React.FC = () => {
       .slice(0, 10);
   }, [requests, activityLogs, residents]);
 
-  const handleApprove = (id: string) => {
-    updateRequestStatus(id, 'Approved');
+  const openApproveDialog = (id: string) => {
+    setApproveTargetId(id);
+    setApproveDialogOpen(true);
   };
 
-  const handleDeny = (id: string) => {
-    updateRequestStatus(id, 'Denied');
+  const handleApproveConfirm = () => {
+    if (!approveTargetId) return;
+    updateRequestStatus(approveTargetId, 'Approved');
+    setApproveDialogOpen(false);
+    setApproveTargetId(null);
+    setSelectedRequest(null);
+  };
+
+  const openDenyDialog = (id: string) => {
+    setDenyTargetId(id);
+    setDenialReason('');
+    setDenyDialogOpen(true);
+  };
+
+  const handleDenyConfirm = async () => {
+    if (!denyTargetId || !denialReason.trim()) return;
+    await supabase.from('certificate_requests').update({ denial_reason: denialReason.trim() }).eq('id', denyTargetId);
+    await updateRequestStatus(denyTargetId, 'Denied');
+    setDenyDialogOpen(false);
+    setDenyTargetId(null);
+    setDenialReason('');
+    setSelectedRequest(null);
   };
 
   return (
@@ -333,18 +362,18 @@ const DashboardPage: React.FC = () => {
                     </Button>
                     {activity.status === 'Pending' && (
                       <>
-                        <Button
+                         <Button
                           size="sm"
                           variant="default"
                           className="bg-success hover:bg-success/90"
-                          onClick={() => handleApprove(activity.id)}
+                          onClick={() => openApproveDialog(activity.id)}
                         >
                           <ThumbsUp className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeny(activity.id)}
+                          onClick={() => openDenyDialog(activity.id)}
                         >
                           <ThumbsDown className="h-4 w-4" />
                         </Button>
@@ -435,10 +464,10 @@ const DashboardPage: React.FC = () => {
                 )}
                 {req.status === 'Pending' && (
                   <div className="flex justify-center gap-3 pt-2">
-                    <Button className="bg-green-600 hover:bg-green-700 px-6" onClick={() => { handleApprove(req.id); setSelectedRequest(null); }}>
+                    <Button className="bg-green-600 hover:bg-green-700 px-6" onClick={() => openApproveDialog(req.id)}>
                       <CheckCircle className="h-4 w-4 mr-1" /> Approve
                     </Button>
-                    <Button variant="destructive" className="px-6" onClick={() => { handleDeny(req.id); setSelectedRequest(null); }}>
+                    <Button variant="destructive" className="px-6" onClick={() => openDenyDialog(req.id)}>
                       <X className="h-4 w-4 mr-1" /> Deny
                     </Button>
                   </div>
@@ -454,6 +483,46 @@ const DashboardPage: React.FC = () => {
           {viewingPhoto && (
             <img src={viewingPhoto} alt="Full view" className="w-full h-auto rounded-lg" />
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Approve Confirmation Dialog */}
+      <AlertDialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to approve this request? The resident will be notified and given 3 days to claim the certificate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApproveConfirm} className="bg-success hover:bg-success/90">Confirm Approve</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deny Reason Dialog */}
+      <Dialog open={denyDialogOpen} onOpenChange={setDenyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deny Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Are you sure you want to deny this request? Please provide a reason below.</p>
+            <div>
+              <Label>Reason for Denial <span className="text-destructive">*</span></Label>
+              <Textarea
+                placeholder="Enter reason for denial..."
+                value={denialReason}
+                onChange={(e) => setDenialReason(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDenyDialogOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDenyConfirm} disabled={!denialReason.trim()}>Confirm Deny</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
