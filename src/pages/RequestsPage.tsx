@@ -42,6 +42,7 @@ const RequestsPage: React.FC = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<CertificateRequest | null>(null);
@@ -55,6 +56,7 @@ const RequestsPage: React.FC = () => {
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const statusUpdateLockRef = useRef<Set<string>>(new Set());
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
 
   const [selectedResident, setSelectedResident] = useState('');
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
@@ -62,17 +64,27 @@ const RequestsPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [markAsApproved, setMarkAsApproved] = useState(true);
 
-  // Auto-open request from notification highlight param
+  // Auto-open and scroll to request from notification highlight param
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
     if (highlightId && requests.length > 0) {
       const req = requests.find(r => r.id === highlightId);
       if (req) {
         setSelectedRequest(req);
+        setHighlightedId(highlightId);
+        // Clear highlight after animation
+        setTimeout(() => setHighlightedId(null), 3000);
       }
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, requests, setSearchParams]);
+
+  // Scroll highlighted row into view
+  useEffect(() => {
+    if (highlightedId && highlightRowRef.current) {
+      highlightRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedId]);
 
   const filteredRequests = useMemo(() => {
     let result = requests.filter(
@@ -380,7 +392,11 @@ const RequestsPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredRequests.map((request) => (
-                <TableRow key={request.id}>
+                <TableRow
+                  key={request.id}
+                  ref={request.id === highlightedId ? highlightRowRef : undefined}
+                  className={request.id === highlightedId ? 'animate-pulse bg-primary/10 ring-2 ring-primary/30 rounded transition-all duration-500' : ''}
+                >
                   <TableCell className="font-medium">REQ-{request.id.slice(-4).toUpperCase()}</TableCell>
                   <TableCell>{request.residentName}</TableCell>
                   <TableCell>{request.certificateType}</TableCell>
