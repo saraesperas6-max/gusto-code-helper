@@ -9,6 +9,7 @@ interface DataContextType {
   requests: CertificateRequest[];
   trashedRequests: CertificateRequest[];
   notifications: Notification[];
+  isDataLoading: boolean;
   addResident: (resident: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => Promise<void>;
   updateResident: (id: string, data: Partial<Resident>) => Promise<void>;
   deleteResident: (id: string) => Promise<void>;
@@ -78,8 +79,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
   const [trashedRequests, setTrashedRequests] = useState<CertificateRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const readNotificationIdsRef = useRef<Set<string>>(new Set());
   const profileMapRef = useRef<Record<string, Profile>>({});
+  const realtimeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoadDoneRef = useRef(false);
 
   // Build notifications from current data without triggering refetch
   const buildNotifications = useCallback((mappedRequests: CertificateRequest[], activeProfiles: Profile[]) => {
@@ -159,19 +163,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setNotifications(buildNotifications(mappedRequests, activeProfiles));
     } catch (err) {
       console.error('Error fetching data:', err);
+    } finally {
+      if (!initialLoadDoneRef.current) {
+        initialLoadDoneRef.current = true;
+        setIsDataLoading(false);
+      }
     }
   }, [user, userRole, buildNotifications]);
 
   useEffect(() => {
     if (user && userRole) {
+      setIsDataLoading(true);
+      initialLoadDoneRef.current = false;
       fetchData();
     } else {
       setResidents([]);
       setRequests([]);
       setTrashedRequests([]);
       setNotifications([]);
+      setIsDataLoading(false);
     }
   }, [user, userRole, fetchData]);
+
+  // Debounced realtime refetch to avoid hammering the server
+  const debouncedFetch = useCallback(() => {
+    if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+    realtimeDebounceRef.current = setTimeout(() => fetchData(), 300);
+  }, [fetchData]);
 
   // Realtime subscriptions for live updates
   useEffect(() => {
@@ -180,17 +198,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const channel = supabase
       .channel('data-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchData();
+        debouncedFetch();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, () => {
-        fetchData();
+        debouncedFetch();
       })
       .subscribe();
 
     return () => {
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
       supabase.removeChannel(channel);
     };
-  }, [user, userRole, fetchData]);
+  }, [user, userRole, debouncedFetch]);
 
   const addResident = async (residentData: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => {
     const { data, error } = await supabase.functions.invoke('admin-users', {
@@ -360,6 +379,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       requests,
       trashedRequests,
       notifications,
+      isDataLoading,
       addResident,
       updateResident,
       deleteResident,
