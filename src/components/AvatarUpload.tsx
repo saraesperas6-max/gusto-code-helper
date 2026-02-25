@@ -66,7 +66,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'h-10 w-10', classNa
   };
 
   return (
-    <div className={`relative group cursor-pointer ${className || ''}`} onClick={() => fileInputRef.current?.click()}>
+    <div className={`relative group cursor-pointer ${className || ''}`} role="button" tabIndex={0} onClick={() => fileInputRef.current?.click()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}>
       <Avatar className={`${size} border-2 border-primary/30`}>
         <AvatarImage src={avatarUrl || undefined} alt="Profile" className="object-cover" />
         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
@@ -85,7 +85,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'h-10 w-10', classNa
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="user"
+        capture="environment"
         className="hidden"
         onChange={handleFileChange}
       />
