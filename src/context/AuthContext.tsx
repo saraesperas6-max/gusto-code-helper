@@ -13,6 +13,7 @@ export interface Profile {
   contact: string | null;
   email: string;
   status: string;
+  avatar_url: string | null;
   created_at: string;
 }
 
