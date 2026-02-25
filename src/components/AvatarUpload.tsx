@@ -84,8 +84,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'h-10 w-10', classNa
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={handleFileChange}
       />
