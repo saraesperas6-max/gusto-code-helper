@@ -14,6 +14,7 @@ export interface Profile {
   email: string;
   status: string;
   created_at: string;
+  avatar_url: string | null;
 }
 
 export type UserRole = 'admin' | 'resident';
