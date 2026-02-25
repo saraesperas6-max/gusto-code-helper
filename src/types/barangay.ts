@@ -23,6 +23,7 @@ export interface Resident {
   email: string;
   password: string;
   status: ResidentStatus;
+  avatarUrl?: string;
   createdAt: Date;
 }
 
