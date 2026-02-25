@@ -52,14 +52,14 @@
     --radius: 0.75rem;
 
     /* Sidebar - Navy Green theme (muted) */
-    --sidebar-background: 166 45% 25%;
+    --sidebar-background: 166 30% 25%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 166 40% 35%;
+    --sidebar-primary: 166 30% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 166 40% 20%;
+    --sidebar-accent: 166 30% 20%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 166 35% 30%;
-    --sidebar-ring: 166 40% 35%;
+    --sidebar-border: 166 25% 30%;
+    --sidebar-ring: 166 30% 35%;
   }
 
   .dark {
@@ -97,14 +97,14 @@
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
 
-    --sidebar-background: 166 45% 22%;
+    --sidebar-background: 166 30% 22%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 166 40% 32%;
+    --sidebar-primary: 166 30% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 166 40% 18%;
+    --sidebar-accent: 166 30% 18%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 166 35% 28%;
-    --sidebar-ring: 166 40% 30%;
+    --sidebar-border: 166 25% 28%;
+    --sidebar-ring: 166 30% 30%;
   }
 }
 
