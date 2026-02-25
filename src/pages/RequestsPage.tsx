@@ -53,6 +53,8 @@ const RequestsPage: React.FC = () => {
   const [denialReason, setDenialReason] = useState('');
   const [undoDialogOpen, setUndoDialogOpen] = useState(false);
   const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [approveTargetId, setApproveTargetId] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const statusUpdateLockRef = useRef<Set<string>>(new Set());
@@ -214,6 +216,21 @@ const RequestsPage: React.FC = () => {
     setDenyDialogOpen(false);
     setDenyTargetId(null);
     setDenialReason('');
+  };
+
+  const openApproveDialog = (id: string) => {
+    setApproveTargetId(id);
+    setApproveDialogOpen(true);
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!approveTargetId) return;
+    await handleStatusUpdate(approveTargetId, 'Approved');
+    if (selectedRequest?.id === approveTargetId) {
+      setSelectedRequest({ ...selectedRequest, status: 'Approved' });
+    }
+    setApproveDialogOpen(false);
+    setApproveTargetId(null);
   };
 
   const openUndoDialog = (id: string) => {
@@ -475,8 +492,7 @@ const RequestsPage: React.FC = () => {
                                   <Button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleStatusUpdate(selectedRequest.id, 'Approved');
-                                      setSelectedRequest({ ...selectedRequest, status: 'Approved' });
+                                      openApproveDialog(selectedRequest.id);
                                     }}
                                     disabled={statusUpdatingId === selectedRequest.id}
                                     className="bg-success hover:bg-success/90"
@@ -516,7 +532,7 @@ const RequestsPage: React.FC = () => {
                             disabled={statusUpdatingId === request.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleStatusUpdate(request.id, 'Approved');
+                              openApproveDialog(request.id);
                             }}
                           >
                             <Check className="h-4 w-4" />
@@ -577,6 +593,22 @@ const RequestsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Approve Confirmation Dialog */}
+      <AlertDialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to approve this request? The resident will be notified and given 3 days to claim the certificate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApproveConfirm} className="bg-success hover:bg-success/90">Confirm Approve</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Deny Reason Dialog */}
       <Dialog open={denyDialogOpen} onOpenChange={setDenyDialogOpen}>
         <DialogContent>
@@ -584,6 +616,7 @@ const RequestsPage: React.FC = () => {
             <DialogTitle>Deny Request</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Are you sure you want to deny this request? Please provide a reason below.</p>
             <div>
               <Label>Reason for Denial <span className="text-destructive">*</span></Label>
               <Textarea
