@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,13 +10,14 @@ import { ThemeProvider } from "./context/ThemeContext";
 import LoginPage from "./pages/LoginPage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 import DashboardLayout from "./layouts/DashboardLayout";
-import DashboardPage from "./pages/DashboardPage";
-import RequestsPage from "./pages/RequestsPage";
-import ResidentsPage from "./pages/ResidentsPage";
-import ReportsPage from "./pages/ReportsPage";
-import ResidentPortal from "./pages/ResidentPortal";
-import NotFound from "./pages/NotFound";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import NotFound from "./pages/NotFound";
+
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const RequestsPage = lazy(() => import("./pages/RequestsPage"));
+const ResidentsPage = lazy(() => import("./pages/ResidentsPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const ResidentPortal = lazy(() => import("./pages/ResidentPortal"));
 
 const queryClient = new QueryClient();
 
@@ -47,40 +49,44 @@ const AppRoutes = () => {
   // Redirect residents with incomplete profiles to complete-profile page
   const needsProfileCompletion = user && userRole === 'resident' && profile && isProfileIncomplete(profile);
 
+  const suspenseFallback = <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
+
   return (
-    <Routes>
-      <Route path="/" element={
-        user ? (
+    <Suspense fallback={suspenseFallback}>
+      <Routes>
+        <Route path="/" element={
+          user ? (
+            needsProfileCompletion ? (
+              <Navigate to="/complete-profile" replace />
+            ) : (
+              <Navigate to={userRole === 'admin' ? '/dashboard' : '/portal'} replace />
+            )
+          ) : (
+            <LoginPage />
+          )
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRole="official"><DashboardLayout /></ProtectedRoute>
+        }>
+          <Route index element={<DashboardPage />} />
+          <Route path="requests" element={<RequestsPage />} />
+          <Route path="residents" element={<ResidentsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+        </Route>
+        <Route path="/portal" element={
           needsProfileCompletion ? (
             <Navigate to="/complete-profile" replace />
           ) : (
-            <Navigate to={userRole === 'admin' ? '/dashboard' : '/portal'} replace />
+            <ProtectedRoute allowedRole="resident"><ResidentPortal /></ProtectedRoute>
           )
-        ) : (
-          <LoginPage />
-        )
-      } />
-      <Route path="/dashboard" element={
-        <ProtectedRoute allowedRole="official"><DashboardLayout /></ProtectedRoute>
-      }>
-        <Route index element={<DashboardPage />} />
-        <Route path="requests" element={<RequestsPage />} />
-        <Route path="residents" element={<ResidentsPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-      </Route>
-      <Route path="/portal" element={
-        needsProfileCompletion ? (
-          <Navigate to="/complete-profile" replace />
-        ) : (
-          <ProtectedRoute allowedRole="resident"><ResidentPortal /></ProtectedRoute>
-        )
-      } />
-      <Route path="/complete-profile" element={
-        user && needsProfileCompletion ? <CompleteProfilePage /> : <Navigate to="/" replace />
-      } />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        } />
+        <Route path="/complete-profile" element={
+          user && needsProfileCompletion ? <CompleteProfilePage /> : <Navigate to="/" replace />
+        } />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
