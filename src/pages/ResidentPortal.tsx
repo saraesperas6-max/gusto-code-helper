@@ -524,7 +524,7 @@ const ResidentPortal: React.FC = () => {
                                         <span className="text-xs text-muted-foreground">Upload {doc}</span>
                                       </>
                                     )}
-                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
+                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
                                   </label>
                                 )}
                               </div>
@@ -556,7 +556,7 @@ const ResidentPortal: React.FC = () => {
                                 <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
                               </>
                             )}
-                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
                           </label>
                           {uploadedFiles.length > 0 && (
                             <div className="mt-2 grid grid-cols-3 gap-2">
