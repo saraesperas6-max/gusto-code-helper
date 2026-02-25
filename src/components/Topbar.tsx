@@ -1,6 +1,5 @@
 import React from 'react';
 import { Search, Bell, Sun, Moon } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
-
+import logo from '@/assets/logo.png';
 
 interface TopbarProps {
   searchPlaceholder?: string;
@@ -114,16 +113,13 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
 
         {/* User Info */}
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 border-2 border-primary/30">
-            <AvatarImage
-              src={profile?.avatar_url ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}` : undefined}
-              alt="Profile"
-              className="object-cover"
+          <div className="w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
+            <img 
+              src={logo} 
+              alt="Barangay Logo" 
+              className="w-full h-full object-cover"
             />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-              {profile ? `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase() : '?'}
-            </AvatarFallback>
-          </Avatar>
+          </div>
           <span className="font-medium text-foreground">
             {userName} <span className="text-muted-foreground">(Barangay Official)</span>
           </span>

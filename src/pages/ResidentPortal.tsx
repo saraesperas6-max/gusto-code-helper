@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash, ShieldCheck, Home, Users, Coins, FileSignature, Briefcase } from 'lucide-react';
-import AvatarUpload from '@/components/AvatarUpload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -315,8 +314,10 @@ const ResidentPortal: React.FC = () => {
        {/* Navbar */}
        <nav className="bg-card shadow-sm px-8 py-4 flex items-center justify-between">
          <div className="flex items-center gap-3">
-            <AvatarUpload size="h-10 w-10" />
-            <span className="font-semibold text-lg text-primary">Palma-Urbano Portal</span>
+           <div className="w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
+             <img src={logo} alt="Barangay Logo" className="w-full h-full object-cover" />
+           </div>
+           <span className="font-semibold text-lg text-primary">Palma-Urbano Portal</span>
          </div>
         <div className="flex items-center gap-4">
           {/* Theme Toggle */}
@@ -524,7 +525,7 @@ const ResidentPortal: React.FC = () => {
                                         <span className="text-xs text-muted-foreground">Upload {doc}</span>
                                       </>
                                     )}
-                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
+                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
                                   </label>
                                 )}
                               </div>
@@ -556,7 +557,7 @@ const ResidentPortal: React.FC = () => {
                                 <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
                               </>
                             )}
-                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
                           </label>
                           {uploadedFiles.length > 0 && (
                             <div className="mt-2 grid grid-cols-3 gap-2">

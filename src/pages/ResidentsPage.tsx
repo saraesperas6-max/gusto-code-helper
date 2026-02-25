@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, Check, RotateCcw } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -327,19 +326,7 @@ const ResidentsPage: React.FC = () => {
                       )}
                     >
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8 border border-primary/20">
-                            <AvatarImage
-                              src={resident.avatarUrl ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${resident.avatarUrl}` : undefined}
-                              alt={`${resident.firstName} ${resident.lastName}`}
-                              className="object-cover"
-                            />
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                              {`${resident.firstName?.[0] || ''}${resident.lastName?.[0] || ''}`.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {resident.firstName} {resident.middleName || ''} {resident.lastName}
-                        </div>
+                        {resident.firstName} {resident.middleName || ''} {resident.lastName}
                       </TableCell>
                       <TableCell>{resident.age}</TableCell>
                       <TableCell>{resident.address}</TableCell>

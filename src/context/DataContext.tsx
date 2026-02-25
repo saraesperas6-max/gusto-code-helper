@@ -45,7 +45,6 @@ const mapProfileToResident = (p: Profile): Resident => ({
   email: p.email,
   password: '',
   status: p.status as ResidentStatus,
-  avatarUrl: p.avatar_url || undefined,
   createdAt: new Date(p.created_at),
 });
 
