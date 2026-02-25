@@ -30,6 +30,7 @@ const PersonalInformation: React.FC = () => {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [viewingPhoto, setViewingPhoto] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -175,13 +176,19 @@ const PersonalInformation: React.FC = () => {
           <div className="space-y-6 py-6">
             {/* Avatar */}
             <div className="flex flex-col items-center gap-3">
-              <div className="relative w-24 h-24 rounded-full border-2 border-primary/30 overflow-hidden bg-muted flex items-center justify-center">
+              <button
+                onClick={() => avatarUrl && setViewingPhoto(true)}
+                className={cn(
+                  "relative w-24 h-24 rounded-full border-2 border-primary/30 overflow-hidden bg-muted flex items-center justify-center transition-all",
+                  avatarUrl && "cursor-pointer hover:ring-2 hover:ring-primary/50 hover:scale-105"
+                )}
+              >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="h-12 w-12 text-muted-foreground" />
                 )}
-              </div>
+              </button>
               <h3 className="text-lg font-semibold text-foreground">{fullName}</h3>
               <Button size="sm" variant="outline" onClick={startCamera}>
                 <Camera className="h-4 w-4 mr-2" /> Update Photo
@@ -338,6 +345,19 @@ const PersonalInformation: React.FC = () => {
             )}
           </div>
           <canvas ref={canvasRef} className="hidden" />
+        </DialogContent>
+      </Dialog>
+
+      {/* Full-size Photo Viewer */}
+      <Dialog open={viewingPhoto} onOpenChange={setViewingPhoto}>
+        <DialogContent className="max-w-lg p-2 bg-transparent border-none shadow-none animate-scale-in">
+          {avatarUrl && (
+            <img
+              src={avatarUrl}
+              alt="Profile full size"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
