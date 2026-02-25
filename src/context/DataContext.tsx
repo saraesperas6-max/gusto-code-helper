@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, Profile } from '@/context/AuthContext';
 import { Resident, CertificateRequest, Notification, ResidentStatus, RequestStatus, CertificateType } from '@/types/barangay';
@@ -78,7 +78,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
   const [trashedRequests, setTrashedRequests] = useState<CertificateRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
+  const readNotificationIdsRef = useRef<Set<string>>(new Set());
+  const profileMapRef = useRef<Record<string, Profile>>({});
+
+  // Build notifications from current data without triggering refetch
+  const buildNotifications = useCallback((mappedRequests: CertificateRequest[], activeProfiles: Profile[]) => {
+    const readIds = readNotificationIdsRef.current;
+
+    const requestNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
+      let title = 'Request Update';
+      let description = `${r.residentName} — ${r.certificateType}`;
+
+      if (r.status === 'Pending') {
+        title = 'New Request';
+      } else if (r.status === 'Approved') {
+        title = 'Certificate Approved';
+        description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
+      } else if (r.status === 'Denied') {
+        title = 'Request Denied';
+        description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
+      }
+
+      return {
+        id: r.id,
+        title,
+        description,
+        type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : r.status === 'Denied' ? 'denied' as const : 'info' as const,
+        time: r.dateRequested.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+        read: readIds.has(r.id),
+        requestId: r.id,
+      };
+    });
+
+    const pendingResidents = activeProfiles.filter((p) => p.status === 'Pending Approval');
+    const residentNotifications: Notification[] = pendingResidents.map((p) => ({
+      id: `resident-${p.user_id}`,
+      title: 'New Resident Registration',
+      description: `${p.first_name} ${p.last_name} has registered and is awaiting approval.`,
+      type: 'pending' as const,
+      time: new Date(p.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+      read: readIds.has(`resident-${p.user_id}`),
+    }));
+
+    return [...residentNotifications, ...requestNotifications];
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!user || !userRole) return;
@@ -86,71 +129,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // Fetch profiles
       const profilesQuery = supabase.from('profiles').select('*');
-      const { data: profilesData } = await profilesQuery;
-      const profiles = (profilesData || []) as unknown as Profile[];
+      // Fetch active requests
+      const activeReqQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
+      // Fetch trashed requests
+      const trashedReqQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+
+      // Run all three queries in parallel
+      const [profilesResult, requestsResult, trashedResult] = await Promise.all([
+        profilesQuery,
+        activeReqQuery,
+        trashedReqQuery,
+      ]);
+
+      const profiles = (profilesResult.data || []) as unknown as Profile[];
       const profileMap: Record<string, Profile> = {};
       profiles.forEach((p) => { profileMap[p.user_id] = p; });
+      profileMapRef.current = profileMap;
 
       const activeProfiles = profiles.filter((p) => !(p as any).deleted_at);
       const deletedProfiles = profiles.filter((p) => !!(p as any).deleted_at);
       setResidents(activeProfiles.map(mapProfileToResident));
       setTrashedResidents(deletedProfiles.map(mapProfileToResident));
 
-      // Fetch active requests (deleted_at IS NULL — handled by RLS policy)
-      const requestsQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
-      const { data: requestsData } = await requestsQuery;
-      const mappedRequests = (requestsData || []).map((r: any) => mapDbRequest(r, profileMap));
+      const mappedRequests = (requestsResult.data || []).map((r: any) => mapDbRequest(r, profileMap));
       setRequests(mappedRequests);
 
-      // Fetch trashed requests (deleted_at IS NOT NULL)
-      const trashedQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
-      const { data: trashedData } = await trashedQuery;
-      setTrashedRequests((trashedData || []).map((r: any) => mapDbRequest(r, profileMap)));
+      setTrashedRequests((trashedResult.data || []).map((r: any) => mapDbRequest(r, profileMap)));
 
-      // Derive notifications from recent requests
-      const requestNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
-        let title = 'Request Update';
-        let description = `${r.residentName} — ${r.certificateType}`;
-
-        if (r.status === 'Pending') {
-          title = 'New Request';
-        } else if (r.status === 'Approved') {
-          title = 'Certificate Approved';
-          description = `${r.residentName} — ${r.certificateType}. Please claim within 3 days.`;
-        } else if (r.status === 'Denied') {
-          title = 'Request Denied';
-          description = `${r.residentName} — ${r.certificateType}${(r as any).denialReason ? `. Reason: ${(r as any).denialReason}` : ''}`;
-        }
-
-        return {
-          id: r.id,
-          title,
-          description,
-          type: r.status === 'Pending' ? 'pending' as const : r.status === 'Approved' ? 'approved' as const : r.status === 'Denied' ? 'denied' as const : 'info' as const,
-          time: r.dateRequested.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-          read: readNotificationIds.has(r.id),
-          requestId: r.id,
-        };
-      });
-
-      // Derive notifications from new resident registrations (Pending Approval)
-      const pendingResidents = activeProfiles.filter((p) => p.status === 'Pending Approval');
-      const residentNotifications: Notification[] = pendingResidents.map((p) => ({
-        id: `resident-${p.user_id}`,
-        title: 'New Resident Registration',
-        description: `${p.first_name} ${p.last_name} has registered and is awaiting approval.`,
-        type: 'pending' as const,
-        time: new Date(p.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-        read: readNotificationIds.has(`resident-${p.user_id}`),
-      }));
-
-      // Combine and sort by time (newest first)
-      const allNotifications = [...residentNotifications, ...requestNotifications];
-      setNotifications(allNotifications);
+      setNotifications(buildNotifications(mappedRequests, activeProfiles));
     } catch (err) {
       console.error('Error fetching data:', err);
     }
-  }, [user, userRole, readNotificationIds]);
+  }, [user, userRole, buildNotifications]);
 
   useEffect(() => {
     if (user && userRole) {
@@ -158,8 +168,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       setResidents([]);
       setRequests([]);
+      setTrashedRequests([]);
       setNotifications([]);
     }
+  }, [user, userRole, fetchData]);
+
+  // Realtime subscriptions for live updates
+  useEffect(() => {
+    if (!user || !userRole) return;
+
+    const channel = supabase
+      .channel('data-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, userRole, fetchData]);
 
   const addResident = async (residentData: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => {
@@ -314,16 +344,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const markNotificationRead = (id: string) => {
-    setReadNotificationIds((prev) => new Set([...prev, id]));
+    readNotificationIdsRef.current.add(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
   const markAllNotificationsRead = () => {
-    setReadNotificationIds((prev) => {
-      const newSet = new Set(prev);
-      notifications.forEach((n) => newSet.add(n.id));
-      return newSet;
-    });
+    notifications.forEach((n) => readNotificationIdsRef.current.add(n.id));
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
