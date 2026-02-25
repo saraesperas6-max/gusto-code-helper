@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Eye, Check, X, Undo2, FileText } from 'lucide-react';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
@@ -53,6 +53,8 @@ const RequestsPage: React.FC = () => {
   const [undoDialogOpen, setUndoDialogOpen] = useState(false);
   const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const statusUpdateLockRef = useRef<Set<string>>(new Set());
 
   const [selectedResident, setSelectedResident] = useState('');
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('');
@@ -131,12 +133,17 @@ const RequestsPage: React.FC = () => {
   };
 
   const handleStatusUpdate = async (id: string, status: RequestStatus) => {
+    const lockKey = `${id}:${status}`;
+    if (statusUpdateLockRef.current.has(lockKey)) return;
+
+    statusUpdateLockRef.current.add(lockKey);
+    setStatusUpdatingId(id);
+
     try {
       const request = requests.find(r => r.id === id);
       const resident = request ? residents.find(r => r.id === request.residentId) : null;
 
       if (status === 'Approved') {
-        // Set 3-day claim deadline
         const claimDeadline = new Date();
         claimDeadline.setDate(claimDeadline.getDate() + 3);
         await supabase.from('certificate_requests').update({
@@ -149,7 +156,6 @@ const RequestsPage: React.FC = () => {
         await updateRequestStatus(id, status);
       }
 
-      // Send email notification
       if (request && resident) {
         await sendNotificationEmail(id, status, resident.email, `${resident.firstName} ${resident.lastName}`, request.certificateType);
       }
@@ -157,6 +163,9 @@ const RequestsPage: React.FC = () => {
       toast({ title: `Request ${status.toLowerCase()}` });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      statusUpdateLockRef.current.delete(lockKey);
+      setStatusUpdatingId((current) => (current === id ? null : current));
     }
   };
 
@@ -447,11 +456,13 @@ const RequestsPage: React.FC = () => {
                               )}
                               {selectedRequest.status === 'Pending' && (
                                 <div className="flex justify-center gap-4 pt-4">
-                                  <Button 
-                                    onClick={() => {
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleStatusUpdate(selectedRequest.id, 'Approved');
                                       setSelectedRequest({ ...selectedRequest, status: 'Approved' });
                                     }}
+                                    disabled={statusUpdatingId === selectedRequest.id}
                                     className="bg-success hover:bg-success/90"
                                   >
                                     <Check className="mr-2 h-4 w-4" />
@@ -483,10 +494,14 @@ const RequestsPage: React.FC = () => {
                       </Dialog>
                       {request.status === 'Pending' && (
                         <>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             className="bg-success hover:bg-success/90"
-                            onClick={() => handleStatusUpdate(request.id, 'Approved')}
+                            disabled={statusUpdatingId === request.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(request.id, 'Approved');
+                            }}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
