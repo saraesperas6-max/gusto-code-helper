@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash, ShieldCheck, Home, Users, Coins, FileSignature, Briefcase } from 'lucide-react';
+import PersonalInformation from '@/components/PersonalInformation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -360,6 +361,9 @@ const ResidentPortal: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Personal Information */}
+        <PersonalInformation />
 
         {/* REQUEST CERTIFICATE - Card Grid */}
         <div className="mb-8">
