@@ -101,6 +101,8 @@ const AdminResidentProfile: React.FC<AdminResidentProfileProps> = ({ residents, 
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
     setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.8));
     stream?.getTracks().forEach(t => t.stop());
@@ -348,6 +350,7 @@ const AdminResidentProfile: React.FC<AdminResidentProfileProps> = ({ residents, 
                   playsInline
                   muted
                   className="w-full rounded-lg border bg-black aspect-[4/3] object-cover"
+                  style={{ transform: 'scaleX(-1)' }}
                 />
                 <Button onClick={capturePhoto}>
                   <Camera className="h-4 w-4 mr-2" /> Capture
