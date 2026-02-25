@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Check, RotateCcw, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,12 +31,34 @@ import { useToast } from '@/hooks/use-toast';
 const ResidentsPage: React.FC = () => {
   const { residents, trashedResidents, addResident, updateResident, softDeleteResident, restoreResident, permanentlyDeleteResident, approveResident } = useData();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingResident, setEditingResident] = useState<Resident | null>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
+  const [highlightedResidentId, setHighlightedResidentId] = useState<string | null>(null);
+  const highlightRef = useRef<HTMLTableRowElement>(null);
+
+  // Handle highlight from notification click
+  useEffect(() => {
+    const residentId = searchParams.get('highlightResident');
+    if (residentId) {
+      setHighlightedResidentId(residentId);
+      setSearchParams({}, { replace: true });
+      // Clear highlight after animation
+      const timer = setTimeout(() => setHighlightedResidentId(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Scroll to highlighted resident
+  useEffect(() => {
+    if (highlightedResidentId && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedResidentId]);
 
   // Full profiles for admin profile viewer
   const [fullProfiles, setFullProfiles] = useState<any[]>([]);
@@ -335,8 +358,10 @@ const ResidentsPage: React.FC = () => {
                   {filteredResidents.map((resident) => (
                     <TableRow 
                       key={resident.id}
+                      ref={highlightedResidentId === resident.id ? highlightRef : undefined}
                       className={cn(
-                        resident.status === 'Pending Approval' && 'bg-warning/10 border-l-4 border-l-warning'
+                        resident.status === 'Pending Approval' && 'bg-warning/10 border-l-4 border-l-warning',
+                        highlightedResidentId === resident.id && 'animate-pulse ring-2 ring-primary ring-offset-2'
                       )}
                     >
                       <TableCell className="font-medium">
