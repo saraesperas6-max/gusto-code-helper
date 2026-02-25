@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Plus, Edit, Trash2, Check, RotateCcw } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Plus, Edit, Trash2, Check, RotateCcw, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,9 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Topbar from '@/components/Topbar';
 import DateFilter from '@/components/DateFilter';
+import AdminResidentProfile from '@/components/AdminResidentProfile';
 import { useData } from '@/context/DataContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Resident } from '@/types/barangay';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +36,14 @@ const ResidentsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
+
+  // Full profiles for admin profile viewer
+  const [fullProfiles, setFullProfiles] = useState<any[]>([]);
+  const fetchFullProfiles = async () => {
+    const { data } = await supabase.from('profiles').select('*').is('deleted_at', null);
+    setFullProfiles(data || []);
+  };
+  useEffect(() => { fetchFullProfiles(); }, [residents]);
   
   const [formData, setFormData] = useState({
     lastName: '', firstName: '', middleName: '', age: '', address: '', contact: '', email: '', password: '',
@@ -299,6 +309,10 @@ const ResidentsPage: React.FC = () => {
           <Tabs defaultValue="active">
             <TabsList className="mb-4">
               <TabsTrigger value="active">Active Residents</TabsTrigger>
+              <TabsTrigger value="profiles">
+                <Users className="h-4 w-4 mr-1" />
+                Profiles
+              </TabsTrigger>
               <TabsTrigger value="trash">
                 <Trash2 className="h-4 w-4 mr-1" />
                 Trash Bin ({trashedResidents.length})
@@ -464,6 +478,13 @@ const ResidentsPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+            </TabsContent>
+
+            <TabsContent value="profiles">
+              <AdminResidentProfile
+                residents={fullProfiles}
+                onProfileUpdated={() => { fetchFullProfiles(); }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
