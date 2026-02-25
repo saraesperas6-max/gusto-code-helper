@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash } from 'lucide-react';
+import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash, ShieldCheck, Home, Users, Coins, FileSignature, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -39,12 +39,30 @@ const CERTIFICATE_TYPES: CertificateType[] = [
 ];
 
 const CERTIFICATE_DESCRIPTIONS: Record<string, string> = {
-  'Barangay Clearance': 'Official document certifying that a resident has no derogatory record in the barangay. Commonly used for employment, business, and legal purposes.',
-  'Certificate of Indigency': 'Certifies that a resident belongs to an indigent family. Used for medical assistance, scholarship applications, and government aid.',
-  'Certificate of Residency': 'Confirms that a person is a bonafide resident of the barangay. Required for enrollment, voter registration, and other transactions.',
-  'Certificate of Low Income': 'Certifies that a resident belongs to a low-income household. Used for financial assistance and social welfare programs.',
-  'Oath of Undertaking': 'A sworn statement by a resident undertaking responsibility for a specific matter. Used for legal and administrative purposes.',
-  'Business Permit': 'Authorization to operate a business within the barangay. Required for new and renewing business establishments.',
+  'Barangay Clearance': 'Get your official Barangay Clearance for legal and personal transactions.',
+  'Certificate of Indigency': 'Avail services and benefits that require proof of indigency.',
+  'Certificate of Residency': 'Obtain proof of residency for school, work, travel and more.',
+  'Certificate of Low Income': 'Secure proof of low income for assistance and support programs.',
+  'Oath of Undertaking': 'Required document for first-time job applicants.',
+  'Business Permit': 'Permit required to legally operate a business.',
+};
+
+const CERTIFICATE_ICONS: Record<string, React.ReactNode> = {
+  'Barangay Clearance': <ShieldCheck className="h-8 w-8" />,
+  'Certificate of Residency': <Home className="h-8 w-8" />,
+  'Certificate of Indigency': <Users className="h-8 w-8" />,
+  'Certificate of Low Income': <Coins className="h-8 w-8" />,
+  'Oath of Undertaking': <FileSignature className="h-8 w-8" />,
+  'Business Permit': <Briefcase className="h-8 w-8" />,
+};
+
+const CERTIFICATE_ICON_COLORS: Record<string, string> = {
+  'Barangay Clearance': 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+  'Certificate of Residency': 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  'Certificate of Indigency': 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  'Certificate of Low Income': 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
+  'Oath of Undertaking': 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
+  'Business Permit': 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
 };
 
 const ResidentPortal: React.FC = () => {
@@ -323,7 +341,7 @@ const ResidentPortal: React.FC = () => {
       </nav>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-5xl mx-auto p-8">
         {/* Pending Approval Notice */}
         {profile.status === 'Pending Approval' && (
           <Card className="mb-6 border-warning">
@@ -340,233 +358,248 @@ const ResidentPortal: React.FC = () => {
               <h1 className="text-2xl font-bold text-foreground">Welcome, {profile.first_name}!</h1>
               <p className="text-muted-foreground">Manage your certificate requests here.</p>
             </div>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={profile.status !== 'Active'}>Apply for New Certificate</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Apply for a Certificate</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmitRequest} className="space-y-4">
-                  <div>
-                    <Label>Certificate Type</Label>
-                    <Select value={certificateType} onValueChange={(v) => { setCertificateType(v as CertificateType); setUploadedFiles([]); setBusinessPermitFiles({}); setFileError(''); }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select certificate type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CERTIFICATE_TYPES.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {certificateType && (
-                    <>
-                      {/* Certificate Preview Card */}
-                      <div
-                        className="rounded-lg border bg-muted/50 p-4 flex items-start gap-4 cursor-pointer hover:bg-muted/80 transition-colors"
-                        onClick={() => setIsSampleOpen(true)}
-                      >
-                        <div className="w-16 h-20 rounded-md bg-primary/10 border border-primary/20 flex flex-col items-center justify-center flex-shrink-0">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <span className="text-[8px] text-primary font-semibold mt-1 text-center leading-tight">SAMPLE</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-foreground">{certificateType}</p>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                            {CERTIFICATE_DESCRIPTIONS[certificateType] || 'Official barangay document.'}
-                          </p>
-                          <p className="text-xs text-primary mt-2 font-medium">Click to view sample →</p>
-                        </div>
-                      </div>
-
-                      {/* Sample Certificate Modal — uses CertificatePreview */}
-                      {isSampleOpen && certificateType && (
-                        <CertificatePreview
-                          request={{
-                            id: 'sample',
-                            residentId: user.id,
-                            residentName: residentName,
-                            certificateType: certificateType as CertificateType,
-                            purpose: 'Sample Purpose',
-                            status: 'Approved',
-                            dateRequested: new Date(),
-                            dateProcessed: new Date(),
-                          }}
-                          open={isSampleOpen}
-                          onOpenChange={setIsSampleOpen}
-                          residentAddress={profile.address || 'Palma-Urbano Barangay, Baguio City'}
-                        />
-                      )}
-
-                      <hr />
-                      <div>
-                        <h4 className="font-semibold mb-3">Applicant Details</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <Label>Full Name</Label>
-                            <Input value={residentName} disabled />
-                          </div>
-                          <div>
-                            <Label>Address</Label>
-                            <Input value={profile.address || ''} disabled />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>Age</Label>
-                              <Input value={profile.age || ''} disabled />
-                            </div>
-                            <div>
-                              <Label>Contact Number</Label>
-                              <Input value={profile.contact || ''} disabled />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <hr />
-
-                      <div>
-                        <h4 className="font-semibold mb-3">Additional Details</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <Label>Purpose</Label>
-                            <Textarea
-                              placeholder="e.g., For job application, medical assistance, etc."
-                              value={purpose}
-                              onChange={(e) => setPurpose(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label>Upload Requirements</Label>
-                            <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
-                              <p className="text-xs font-semibold text-foreground mb-1">Required Documents for {certificateType}:</p>
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
-                              </p>
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                <span className="font-semibold">Accepted Gov't IDs:</span> National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card
-                              </p>
-                            </div>
-
-                            {isBusinessPermit ? (
-                              <div className="space-y-3 mt-2">
-                                {requiredDocs.map((doc) => {
-                                  const uploaded = businessPermitFiles[doc];
-                                  return (
-                                    <div key={doc} className="border rounded-lg p-3 bg-card">
-                                      <p className="text-xs font-semibold text-foreground mb-2">
-                                        {doc} {uploaded ? <span className="text-success">✓</span> : <span className="text-destructive">(required)</span>}
-                                      </p>
-                                      {uploaded ? (
-                                        <div className="relative group inline-block">
-                                          <img src={uploaded.preview} alt={doc} className="w-24 h-16 object-cover rounded-lg border" />
-                                          <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => removeBusinessPermitFile(doc)}
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </Button>
-                                          <p className="text-[10px] text-muted-foreground truncate mt-0.5 max-w-[96px]">{uploaded.file.name}</p>
-                                        </div>
-                                      ) : (
-                                        <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
-                                          {validatingFile && doc === 'Valid Government-Issued ID' ? (
-                                            <>
-                                              <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
-                                              <span className="text-xs text-muted-foreground">Verifying ID...</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Upload className="h-5 w-5 text-muted-foreground mb-1" />
-                                              <span className="text-xs text-muted-foreground">Upload {doc}</span>
-                                            </>
-                                          )}
-                                          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
-                                        </label>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <>
-                                <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5 mb-2">
-                                  {requiredDocs.map((doc, i) => (
-                                    <li key={doc} className={uploadedFiles.length > i ? 'text-success font-medium' : ''}>
-                                      {doc} {uploadedFiles.length > i ? '✓' : '(required)'}
-                                    </li>
-                                  ))}
-                                </ul>
-                                <p className="text-[10px] text-muted-foreground mb-2">
-                                  Uploaded: {uploadedFiles.length} / {requiredDocs.length} required
-                                </p>
-                                <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
-                                  {validatingFile ? (
-                                    <>
-                                      <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
-                                      <span className="text-sm text-muted-foreground">Verifying document with AI...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                                      <span className="text-sm text-muted-foreground">Click to upload photos</span>
-                                      <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
-                                    </>
-                                  )}
-                                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
-                                </label>
-                                {uploadedFiles.length > 0 && (
-                                  <div className="mt-2 grid grid-cols-3 gap-2">
-                                    {uploadedFiles.map((item, index) => (
-                                      <div key={index} className="relative group">
-                                        <img src={item.preview} alt={`Upload ${index + 1}`} className="w-full h-20 object-cover rounded-lg border" />
-                                        <Button
-                                          type="button"
-                                          variant="destructive"
-                                          size="icon"
-                                          className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          onClick={() => removeFile(index)}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </Button>
-                                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.file.name}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                            )}
-
-                            {fileError && (
-                              <p className="text-xs text-destructive mt-1">{fileError}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting || !certificateType || !!missingUploads}>
-                      {submitting ? 'Submitting...' : 'Submit Request'}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
           </CardContent>
         </Card>
+
+        {/* REQUEST CERTIFICATE - Card Grid */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-foreground text-center mb-6 tracking-wide uppercase">Request Certificate</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {CERTIFICATE_TYPES.map((type) => (
+              <Card
+                key={type}
+                className="flex flex-col items-center text-center p-6 hover:shadow-lg transition-shadow border"
+              >
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${CERTIFICATE_ICON_COLORS[type] || 'bg-muted text-muted-foreground'}`}>
+                  {CERTIFICATE_ICONS[type] || <FileText className="h-8 w-8" />}
+                </div>
+                <h3 className="font-semibold text-foreground text-sm mb-1">{type}</h3>
+                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{CERTIFICATE_DESCRIPTIONS[type]}</p>
+                <Button
+                  size="sm"
+                  disabled={profile.status !== 'Active'}
+                  onClick={() => {
+                    setCertificateType(type);
+                    setUploadedFiles([]);
+                    setBusinessPermitFiles({});
+                    setFileError('');
+                    setIsModalOpen(true);
+                  }}
+                >
+                  Request Now
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Application Form Dialog */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Apply for {certificateType || 'a Certificate'}</DialogTitle>
+            </DialogHeader>
+            {certificateType && (
+              <form onSubmit={handleSubmitRequest} className="space-y-4">
+                {/* Certificate Preview Card */}
+                <div
+                  className="rounded-lg border bg-muted/50 p-4 flex items-start gap-4 cursor-pointer hover:bg-muted/80 transition-colors"
+                  onClick={() => setIsSampleOpen(true)}
+                >
+                  <div className="w-16 h-20 rounded-md bg-primary/10 border border-primary/20 flex flex-col items-center justify-center flex-shrink-0">
+                    <FileText className="h-8 w-8 text-primary" />
+                    <span className="text-[8px] text-primary font-semibold mt-1 text-center leading-tight">SAMPLE</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground">{certificateType}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {CERTIFICATE_DESCRIPTIONS[certificateType] || 'Official barangay document.'}
+                    </p>
+                    <p className="text-xs text-primary mt-2 font-medium">Click to view sample →</p>
+                  </div>
+                </div>
+
+                {/* Sample Certificate Modal */}
+                {isSampleOpen && certificateType && (
+                  <CertificatePreview
+                    request={{
+                      id: 'sample',
+                      residentId: user.id,
+                      residentName: residentName,
+                      certificateType: certificateType as CertificateType,
+                      purpose: 'Sample Purpose',
+                      status: 'Approved',
+                      dateRequested: new Date(),
+                      dateProcessed: new Date(),
+                    }}
+                    open={isSampleOpen}
+                    onOpenChange={setIsSampleOpen}
+                    residentAddress={profile.address || 'Palma-Urbano Barangay, Baguio City'}
+                  />
+                )}
+
+                <hr />
+                <div>
+                  <h4 className="font-semibold mb-3">Applicant Details</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Full Name</Label>
+                      <Input value={residentName} disabled />
+                    </div>
+                    <div>
+                      <Label>Address</Label>
+                      <Input value={profile.address || ''} disabled />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Age</Label>
+                        <Input value={profile.age || ''} disabled />
+                      </div>
+                      <div>
+                        <Label>Contact Number</Label>
+                        <Input value={profile.contact || ''} disabled />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <hr />
+
+                <div>
+                  <h4 className="font-semibold mb-3">Additional Details</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Purpose</Label>
+                      <Textarea
+                        placeholder="e.g., For job application, medical assistance, etc."
+                        value={purpose}
+                        onChange={(e) => setPurpose(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Upload Requirements</Label>
+                      <div className="mt-2 mb-2 p-3 bg-muted/50 rounded-lg border">
+                        <p className="text-xs font-semibold text-foreground mb-1">Required Documents for {certificateType}:</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Accepted: JPG, PNG, WEBP, GIF · Max 5MB per file
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          <span className="font-semibold">Accepted Gov't IDs:</span> National ID, Philippine Passport, Driver's License, SSS Card, UMID Card, Postal ID, Senior Citizen's ID Card
+                        </p>
+                      </div>
+
+                      {isBusinessPermit ? (
+                        <div className="space-y-3 mt-2">
+                          {requiredDocs.map((doc) => {
+                            const uploaded = businessPermitFiles[doc];
+                            return (
+                              <div key={doc} className="border rounded-lg p-3 bg-card">
+                                <p className="text-xs font-semibold text-foreground mb-2">
+                                  {doc} {uploaded ? <span className="text-success">✓</span> : <span className="text-destructive">(required)</span>}
+                                </p>
+                                {uploaded ? (
+                                  <div className="relative group inline-block">
+                                    <img src={uploaded.preview} alt={doc} className="w-24 h-16 object-cover rounded-lg border" />
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeBusinessPermitFile(doc)}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5 max-w-[96px]">{uploaded.file.name}</p>
+                                  </div>
+                                ) : (
+                                  <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {validatingFile && doc === 'Valid Government-Issued ID' ? (
+                                      <>
+                                        <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                                        <span className="text-xs text-muted-foreground">Verifying ID...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                                        <span className="text-xs text-muted-foreground">Upload {doc}</span>
+                                      </>
+                                    )}
+                                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleBusinessPermitFileChange(doc, e)} disabled={validatingFile} />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <>
+                          <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5 mb-2">
+                            {requiredDocs.map((doc, i) => (
+                              <li key={doc} className={uploadedFiles.length > i ? 'text-success font-medium' : ''}>
+                                {doc} {uploadedFiles.length > i ? '✓' : '(required)'}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="text-[10px] text-muted-foreground mb-2">
+                            Uploaded: {uploadedFiles.length} / {requiredDocs.length} required
+                          </p>
+                          <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${validatingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {validatingFile ? (
+                              <>
+                                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                                <span className="text-sm text-muted-foreground">Verifying document with AI...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                                <span className="text-sm text-muted-foreground">Click to upload photos</span>
+                                <span className="text-xs text-muted-foreground">(You can upload multiple files · Max 5MB each)</span>
+                              </>
+                            )}
+                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleFilesChange} disabled={validatingFile} />
+                          </label>
+                          {uploadedFiles.length > 0 && (
+                            <div className="mt-2 grid grid-cols-3 gap-2">
+                              {uploadedFiles.map((item, index) => (
+                                <div key={index} className="relative group">
+                                  <img src={item.preview} alt={`Upload ${index + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeFile(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.file.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {fileError && (
+                        <p className="text-xs text-destructive mt-1">{fileError}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting || !certificateType || !!missingUploads}>
+                    {submitting ? 'Submitting...' : 'Submit Request'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Requests Table */}
         <Card>
