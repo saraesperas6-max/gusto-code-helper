@@ -51,15 +51,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar - Navy Green theme */
-    --sidebar-background: 166 100% 30%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 220 70% 55%;
+    /* Sidebar - Navy Green theme (muted) */
+    --sidebar-background: 166 45% 25%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 166 40% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 166 80% 25%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 166 70% 35%;
-    --sidebar-ring: 166 100% 40%;
+    --sidebar-accent: 166 40% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 166 35% 30%;
+    --sidebar-ring: 166 40% 35%;
   }
 
   .dark {
@@ -97,14 +97,14 @@
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
 
-    --sidebar-background: 166 100% 30%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 220 70% 55%;
+    --sidebar-background: 166 45% 22%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 166 40% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 166 80% 25%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 166 70% 35%;
-    --sidebar-ring: 166 100% 40%;
+    --sidebar-accent: 166 40% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 166 35% 28%;
+    --sidebar-ring: 166 40% 30%;
   }
 }
 
