@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { TableSkeleton } from '@/components/DashboardSkeleton';
 import { Plus, Eye, Check, X, Undo2, FileText, User, MapPin, Phone, Mail, Calendar } from 'lucide-react';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
@@ -39,7 +38,7 @@ const CERTIFICATE_TYPES: CertificateType[] = [
 ];
 
 const RequestsPage: React.FC = () => {
-  const { requests, residents, addRequest, updateRequestStatus, refreshData, isDataLoading } = useData();
+  const { requests, residents, addRequest, updateRequestStatus, refreshData } = useData();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -397,9 +396,6 @@ const RequestsPage: React.FC = () => {
           </Dialog>
         </CardHeader>
         <CardContent>
-          {isDataLoading ? (
-            <TableSkeleton rows={6} cols={6} />
-          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -609,7 +605,6 @@ const RequestsPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
-          )}
         </CardContent>
       </Card>
 
