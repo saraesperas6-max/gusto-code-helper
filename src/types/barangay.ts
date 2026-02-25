@@ -51,7 +51,7 @@ export interface Notification {
   id: string;
   title: string;
   description: string;
-  type: 'pending' | 'approved' | 'info';
+  type: 'pending' | 'approved' | 'denied' | 'info';
   time: string;
   read: boolean;
   requestId?: string;

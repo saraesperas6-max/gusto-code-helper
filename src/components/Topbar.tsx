@@ -78,20 +78,25 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
             <div className="max-h-80 overflow-y-auto">
               {notifications.length > 0 ? (
                 notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`flex items-start gap-3 p-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!notif.read ? 'bg-primary/5' : ''}`}
-                    onClick={() => {
-                      markNotificationRead(notif.id);
-                      if (notif.requestId) {
-                        navigate(`/dashboard/requests?highlight=${notif.requestId}`);
-                      }
-                    }}
-                  >
-                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                      notif.type === 'pending' ? 'bg-warning' : 
-                      notif.type === 'approved' ? 'bg-success' : 'bg-primary'
-                    }`} />
+                   <div
+                     key={notif.id}
+                     className={`flex items-start gap-3 p-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${
+                       notif.type === 'approved' ? 'bg-green-500/10 hover:bg-green-500/15' :
+                       notif.type === 'denied' ? 'bg-red-500/10 hover:bg-red-500/15' :
+                       !notif.read ? 'bg-primary/5' : ''
+                     }`}
+                     onClick={() => {
+                       markNotificationRead(notif.id);
+                       if (notif.requestId) {
+                         navigate(`/dashboard/requests?highlight=${notif.requestId}`);
+                       }
+                     }}
+                   >
+                     <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                       notif.type === 'pending' ? 'bg-warning' : 
+                       notif.type === 'approved' ? 'bg-green-500' : 
+                       notif.type === 'denied' ? 'bg-red-500' : 'bg-primary'
+                     }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{notif.title}</p>
                       <p className="text-xs text-muted-foreground truncate">{notif.description}</p>
