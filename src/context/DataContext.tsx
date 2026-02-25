@@ -108,7 +108,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTrashedRequests((trashedData || []).map((r: any) => mapDbRequest(r, profileMap)));
 
       // Derive notifications from recent requests
-      const derivedNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
+      const requestNotifications: Notification[] = mappedRequests.slice(0, 10).map((r: CertificateRequest) => {
         let title = 'Request Update';
         let description = `${r.residentName} — ${r.certificateType}`;
 
@@ -132,7 +132,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           requestId: r.id,
         };
       });
-      setNotifications(derivedNotifications);
+
+      // Derive notifications from new resident registrations (Pending Approval)
+      const pendingResidents = activeProfiles.filter((p) => p.status === 'Pending Approval');
+      const residentNotifications: Notification[] = pendingResidents.map((p) => ({
+        id: `resident-${p.user_id}`,
+        title: 'New Resident Registration',
+        description: `${p.first_name} ${p.last_name} has registered and is awaiting approval.`,
+        type: 'pending' as const,
+        time: new Date(p.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+        read: readNotificationIds.has(`resident-${p.user_id}`),
+      }));
+
+      // Combine and sort by time (newest first)
+      const allNotifications = [...residentNotifications, ...requestNotifications];
+      setNotifications(allNotifications);
     } catch (err) {
       console.error('Error fetching data:', err);
     }
