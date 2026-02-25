@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Eye, Check, X, Undo2, FileText } from 'lucide-react';
+import { Plus, Eye, Check, X, Undo2, FileText, User, MapPin, Phone, Mail, Calendar } from 'lucide-react';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -431,16 +431,39 @@ const RequestsPage: React.FC = () => {
                           <DialogHeader>
                             <DialogTitle>Request Details</DialogTitle>
                           </DialogHeader>
-                          {selectedRequest && (
+                          {selectedRequest && (() => {
+                            const resident = residents.find(r => r.id === selectedRequest.residentId);
+                            return (
                             <div className="space-y-4">
+                              {/* Resident Profile Section */}
+                              {resident && (
+                                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border">
+                                  <div
+                                    className="relative w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors flex-shrink-0"
+                                    onClick={() => resident.avatarUrl && setViewingPhoto(resident.avatarUrl)}
+                                  >
+                                    {resident.avatarUrl ? (
+                                      <img src={resident.avatarUrl} alt={selectedRequest.residentName} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <User className="h-8 w-8 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <p className="font-semibold text-foreground text-base">{selectedRequest.residentName}</p>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{resident.email}</span>
+                                      {resident.contact && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{resident.contact}</span>}
+                                      {resident.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{resident.address}</span>}
+                                      {resident.dateOfBirth && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(resident.dateOfBirth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-sm text-muted-foreground">Request ID</p>
                                   <p className="font-medium">REQ-{selectedRequest.id.slice(-4).toUpperCase()}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Resident Name</p>
-                                  <p className="font-medium">{selectedRequest.residentName}</p>
                                 </div>
                                 <div>
                                   <p className="text-sm text-muted-foreground">Certificate Type</p>
@@ -519,9 +542,10 @@ const RequestsPage: React.FC = () => {
                                     Undo — Revert to Pending
                                   </Button>
                                 </div>
-                              )}
+                               )}
                             </div>
-                          )}
+                            );
+                          })()}
                         </DialogContent>
                       </Dialog>
                       {request.status === 'Pending' && (

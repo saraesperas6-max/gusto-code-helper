@@ -46,6 +46,8 @@ const mapProfileToResident = (p: Profile): Resident => ({
   password: '',
   status: p.status as ResidentStatus,
   createdAt: new Date(p.created_at),
+  avatarUrl: p.avatar_url || undefined,
+  dateOfBirth: p.date_of_birth || undefined,
 });
 
 const mapDbRequest = (r: any, profileMap: Record<string, Profile>): CertificateRequest & { denialReason?: string } => {
