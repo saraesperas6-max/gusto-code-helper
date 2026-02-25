@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import Topbar from '@/components/Topbar';
+import UserProfileCard from '@/components/UserProfileCard';
 import { useData } from '@/context/DataContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -166,6 +167,9 @@ const DashboardPage: React.FC = () => {
       <Topbar hideSearch />
       
       <h2 className="text-2xl font-bold text-foreground mb-6">Dashboard Overview</h2>
+
+      {/* User Profile Card */}
+      <UserProfileCard />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
