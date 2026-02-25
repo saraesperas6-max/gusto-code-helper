@@ -23,7 +23,7 @@ import Topbar from '@/components/Topbar';
 import DateFilter from '@/components/DateFilter';
 import AdminResidentProfile from '@/components/AdminResidentProfile';
 import { useData } from '@/context/DataContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client'; // kept for potential future use
 import { Resident } from '@/types/barangay';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -60,13 +60,23 @@ const ResidentsPage: React.FC = () => {
     }
   }, [highlightedResidentId]);
 
-  // Full profiles for admin profile viewer
-  const [fullProfiles, setFullProfiles] = useState<any[]>([]);
-  const fetchFullProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('*').is('deleted_at', null);
-    setFullProfiles(data || []);
-  };
-  useEffect(() => { fetchFullProfiles(); }, [residents]);
+  // Full profiles for admin profile viewer — use residents from context instead of redundant query
+  const fullProfiles = useMemo(() => {
+    return residents.map(r => ({
+      user_id: r.id,
+      first_name: r.firstName,
+      last_name: r.lastName,
+      middle_name: r.middleName || null,
+      age: r.age,
+      address: r.address,
+      contact: r.contact,
+      email: r.email,
+      status: r.status,
+      avatar_url: r.avatarUrl || null,
+      date_of_birth: r.dateOfBirth || null,
+      created_at: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+    }));
+  }, [residents]);
   
   const [formData, setFormData] = useState({
     lastName: '', firstName: '', middleName: '', age: '', address: '', contact: '', email: '', password: '',
@@ -508,7 +518,7 @@ const ResidentsPage: React.FC = () => {
             <TabsContent value="profiles">
               <AdminResidentProfile
                 residents={fullProfiles}
-                onProfileUpdated={() => { fetchFullProfiles(); }}
+                onProfileUpdated={() => { /* data refreshes via realtime */ }}
               />
             </TabsContent>
           </Tabs>
