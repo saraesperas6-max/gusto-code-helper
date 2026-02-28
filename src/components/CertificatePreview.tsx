@@ -162,7 +162,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
     if (!open) return;
     const updateScale = () => {
       if (containerRef.current) {
-        const availableWidth = containerRef.current.clientWidth - 16;
+        const availableWidth = containerRef.current.clientWidth;
         const s = Math.min(1, availableWidth / A4_WIDTH_PX);
         setScale(s);
       }
@@ -189,24 +189,25 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[680px] w-[95vw] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-sm sm:text-lg">{cert.title} Preview</DialogTitle>
-            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF" className="h-8 w-8 sm:h-9 sm:w-9">
-              <Download className="h-4 w-4" />
+      <DialogContent className="max-w-[680px] w-[98vw] max-h-[95dvh] overflow-y-auto p-2 sm:p-6">
+        <DialogHeader className="pb-1 sm:pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-xs sm:text-lg truncate">{cert.title} Preview</DialogTitle>
+            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF" className="h-7 w-7 sm:h-9 sm:w-9 shrink-0">
+              <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div ref={containerRef} className="flex justify-center overflow-hidden">
+        <div ref={containerRef} className="flex justify-center overflow-hidden w-full">
           <div
             style={{
               width: A4_WIDTH_PX,
               minHeight: A4_HEIGHT_PX,
               transform: `scale(${scale})`,
-              transformOrigin: 'top center',
-              marginBottom: `${(A4_HEIGHT_PX * scale) - A4_HEIGHT_PX}px`,
+              transformOrigin: 'top left',
+              height: A4_HEIGHT_PX * scale,
+              maxWidth: A4_WIDTH_PX * scale,
             }}
           >
             <div
