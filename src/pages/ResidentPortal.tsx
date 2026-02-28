@@ -92,6 +92,7 @@ const ResidentPortal: React.FC = () => {
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const { toast } = useToast();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showAllRequests, setShowAllRequests] = useState(false);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -618,7 +619,7 @@ const ResidentPortal: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {myRequests.length > 0 ? (
-                  myRequests.map((request, index) => (
+                  (showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => (
                     <TableRow key={request.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{request.certificateType}</TableCell>
@@ -660,6 +661,18 @@ const ResidentPortal: React.FC = () => {
                 )}
               </TableBody>
             </Table>
+            {myRequests.length > 5 && (
+              <div className="flex justify-center pt-3 pb-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllRequests(prev => !prev)}
+                  className="text-primary"
+                >
+                  {showAllRequests ? 'Show Less' : `View All (${myRequests.length})`}
+                </Button>
+              </div>
+            )}
 
             {/* View Submitted Request Dialog */}
             <Dialog open={!!viewingRequest} onOpenChange={(open) => { if (!open) setViewingRequest(null); }}>
