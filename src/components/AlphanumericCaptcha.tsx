@@ -19,12 +19,12 @@ const generateCode = (): string => {
 const AlphanumericCaptcha: React.FC<AlphanumericCaptchaProps> = ({ onVerified }) => {
   const [code, setCode] = useState(generateCode);
   const [input, setInput] = useState('');
-  const [error, setError] = useState('');
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const refresh = useCallback(() => {
     setCode(generateCode());
     setInput('');
-    setError('');
+    setStatus('idle');
     onVerified(false);
   }, [onVerified]);
 
@@ -34,12 +34,14 @@ const AlphanumericCaptcha: React.FC<AlphanumericCaptchaProps> = ({ onVerified })
 
   const handleVerify = () => {
     if (input === code) {
-      setError('');
+      setStatus('success');
       onVerified(true);
     } else {
-      setError('Code does not match. Try again.');
+      setStatus('error');
       onVerified(false);
-      refresh();
+      setTimeout(() => {
+        refresh();
+      }, 800);
     }
   };
 
@@ -70,14 +72,21 @@ const AlphanumericCaptcha: React.FC<AlphanumericCaptchaProps> = ({ onVerified })
       <Input
         placeholder="Enter the code above"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => { setInput(e.target.value); if (status !== 'idle') setStatus('idle'); }}
         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleVerify())}
-        className="text-center tracking-widest"
+        className={`text-center tracking-widest transition-colors ${
+          status === 'success'
+            ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 focus-visible:ring-green-500'
+            : status === 'error'
+            ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 focus-visible:ring-red-500'
+            : ''
+        }`}
       />
       <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleVerify}>
         Verify
       </Button>
-      {error && <p className="text-xs text-center text-destructive">{error}</p>}
+      {status === 'error' && <p className="text-xs text-center text-destructive">Code does not match. Try again.</p>}
+      {status === 'success' && <p className="text-xs text-center text-green-600 dark:text-green-400">Verified successfully!</p>}
     </div>
   );
 };
