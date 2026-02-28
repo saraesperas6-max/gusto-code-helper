@@ -30,14 +30,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the token belongs to a valid user or is the anon key used by pg_cron
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const token = authHeader.replace("Bearer ", "");
 
-    // Allow the anon key (used by pg_cron/pg_net) or verify as authenticated admin
-    if (token !== anonKey) {
+    // Allow the service role key (used by pg_cron/pg_net via vault) or verify as authenticated admin
+    if (token === serviceRoleKey) {
+      // Service role key - trusted, proceed
+    } else {
       const userClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
       });
@@ -48,8 +49,8 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const adminClient = createClient(supabaseUrl, serviceRoleKey);
-      const { data: roleData } = await adminClient
+      const adminClient2 = createClient(supabaseUrl, serviceRoleKey);
+      const { data: roleData } = await adminClient2
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
