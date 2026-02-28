@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -33,6 +34,8 @@ const ReportsPage: React.FC = () => {
   const { requests, residents } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
+  const [logExpanded, setLogExpanded] = useState(false);
+  const LOG_DEFAULT_VISIBLE = 5;
   
   const approvedRequests = requests.filter(r => r.status === 'Approved');
   const requestsYTD = approvedRequests.length;
@@ -203,7 +206,7 @@ const ReportsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredApprovedRequests.map((request) => (
+              {(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>
                     {request.dateProcessed 
@@ -225,6 +228,13 @@ const ReportsPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
+          {filteredApprovedRequests.length > LOG_DEFAULT_VISIBLE && (
+            <div className="flex justify-center pt-4">
+              <Button variant="ghost" size="sm" onClick={() => setLogExpanded(!logExpanded)}>
+                {logExpanded ? 'Show Less' : `View More (${filteredApprovedRequests.length - LOG_DEFAULT_VISIBLE} more)`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
