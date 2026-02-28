@@ -51,15 +51,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar - Dark Blue theme */
-    --sidebar-background: 220 40% 13%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 220 70% 50%;
+    /* Sidebar - Teal theme matching Welcome section */
+    --sidebar-background: 170 55% 30%;
+    --sidebar-foreground: 170 20% 95%;
+    --sidebar-primary: 170 65% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 35% 18%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 220 30% 20%;
-    --sidebar-ring: 220 70% 50%;
+    --sidebar-accent: 170 50% 25%;
+    --sidebar-accent-foreground: 170 20% 95%;
+    --sidebar-border: 170 45% 22%;
+    --sidebar-ring: 170 55% 45%;
   }
 
   .dark {
@@ -97,14 +97,14 @@
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
 
-    --sidebar-background: 220 45% 10%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 227 83% 60%;
+    --sidebar-background: 170 50% 18%;
+    --sidebar-foreground: 170 20% 95%;
+    --sidebar-primary: 170 60% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 40% 15%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 220 35% 18%;
-    --sidebar-ring: 227 83% 60%;
+    --sidebar-accent: 170 45% 14%;
+    --sidebar-accent-foreground: 170 20% 95%;
+    --sidebar-border: 170 40% 15%;
+    --sidebar-ring: 170 55% 45%;
   }
 }
 
