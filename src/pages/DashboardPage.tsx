@@ -263,12 +263,12 @@ const DashboardPage: React.FC = () => {
             <CardTitle className="text-sm sm:text-base font-semibold">Weekly Request Volume</CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-6">
-            <div className="h-48 sm:h-72">
+            <div className="h-40 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
+                <BarChart data={weeklyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" allowDecimals={false} />
+                  <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#6b7280" allowDecimals={false} tick={{ fontSize: 11 }} width={30} />
                   <Tooltip />
                   <Bar dataKey="requests" fill="#1a4de8" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -282,15 +282,15 @@ const DashboardPage: React.FC = () => {
             <CardTitle className="text-sm sm:text-base font-semibold">Certificate Distribution</CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-6">
-            <div className="h-48 sm:h-72">
+            <div className="h-36 sm:h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
+                    innerRadius={30}
+                    outerRadius={60}
                     paddingAngle={5}
                     dataKey="value"
                   >
@@ -302,9 +302,9 @@ const DashboardPage: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-4 space-y-2">
+            <div className="mt-2 sm:mt-4 space-y-1 sm:space-y-2">
               {pieData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2 text-sm">
+                <div key={item.name} className="flex items-center gap-2 text-xs sm:text-sm">
                   <div 
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: item.color }}
@@ -323,17 +323,17 @@ const DashboardPage: React.FC = () => {
           <CardTitle className="text-sm sm:text-base font-semibold">Monthly Request Trend</CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          <div className="h-48 sm:h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="requests" stroke="#1a4de8" strokeWidth={2} dot={{ fill: '#1a4de8', r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="h-40 sm:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#6b7280" allowDecimals={false} tick={{ fontSize: 11 }} width={30} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="requests" stroke="#1a4de8" strokeWidth={2} dot={{ fill: '#1a4de8', r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
         </CardContent>
       </Card>
 

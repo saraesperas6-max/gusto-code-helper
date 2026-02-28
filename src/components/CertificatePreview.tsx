@@ -189,11 +189,11 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[680px] w-[98vw] max-h-[95dvh] overflow-y-auto p-2 sm:p-6">
-        <DialogHeader className="pb-1 sm:pb-2">
+      <DialogContent className="max-w-[680px] w-[96vw] max-h-[95dvh] overflow-y-auto p-2 sm:p-6 [&>button]:top-2 [&>button]:right-2 [&>button]:h-7 [&>button]:w-7 sm:[&>button]:top-4 sm:[&>button]:right-4 sm:[&>button]:h-8 sm:[&>button]:w-8">
+        <DialogHeader className="pb-1 sm:pb-2 pr-10">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-xs sm:text-lg truncate">{cert.title} Preview</DialogTitle>
-            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF" className="h-7 w-7 sm:h-9 sm:w-9 shrink-0">
+            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF" className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 mr-1">
               <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
