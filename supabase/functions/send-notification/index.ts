@@ -63,6 +63,20 @@ Deno.serve(async (req) => {
       throw new Error("Missing required fields: residentEmail, residentName");
     }
 
+    // Escape HTML to prevent XSS/injection in email templates
+    function escapeHtml(unsafe: string): string {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    const safeName = escapeHtml(residentName);
+    const safeCertType = certificateType ? escapeHtml(certificateType) : "";
+    const safeDenialReason = denialReason ? escapeHtml(denialReason) : "";
+
     // Validate recipient email exists in profiles table
     const { data: profileData } = await adminClient
       .from("profiles")
@@ -85,7 +99,7 @@ Deno.serve(async (req) => {
       htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #16a34a;">Account Approved ✅</h2>
-          <p>Dear <strong>${residentName}</strong>,</p>
+          <p>Dear <strong>${safeName}</strong>,</p>
           <p>We are pleased to inform you that your resident account has been <strong>approved</strong> by the Barangay Administration.</p>
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <p style="margin: 0; color: #166534;">You now have full access to the Barangay Resident Portal. You can log in to request certificates and access other services.</p>
@@ -95,12 +109,12 @@ Deno.serve(async (req) => {
       `;
     } else if (status === "Approved") {
       if (!requestId || !certificateType) throw new Error("Missing required fields for certificate notification");
-      subject = `Your ${certificateType} Request Has Been Approved`;
+      subject = `Your ${safeCertType} Request Has Been Approved`;
       htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #16a34a;">Certificate Request Approved ✅</h2>
-          <p>Dear <strong>${residentName}</strong>,</p>
-          <p>We are pleased to inform you that your request for <strong>${certificateType}</strong> has been <strong>approved</strong>.</p>
+          <p>Dear <strong>${safeName}</strong>,</p>
+          <p>We are pleased to inform you that your request for <strong>${safeCertType}</strong> has been <strong>approved</strong>.</p>
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <p style="margin: 0 0 8px 0; color: #166534;"><strong>⚠️ Important:</strong> Please claim your certificate at the Barangay Hall within <strong>3 days</strong>. 
             Failure to claim within this period will result in your request being automatically declined.</p>
@@ -132,15 +146,15 @@ Deno.serve(async (req) => {
       `;
     } else if (status === "Denied") {
       if (!requestId || !certificateType) throw new Error("Missing required fields for certificate notification");
-      subject = `Your ${certificateType} Request Has Been Denied`;
+      subject = `Your ${safeCertType} Request Has Been Denied`;
       htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #dc2626;">Certificate Request Denied ❌</h2>
-          <p>Dear <strong>${residentName}</strong>,</p>
-          <p>We regret to inform you that your request for <strong>${certificateType}</strong> has been <strong>denied</strong>.</p>
-          ${denialReason ? `
+          <p>Dear <strong>${safeName}</strong>,</p>
+          <p>We regret to inform you that your request for <strong>${safeCertType}</strong> has been <strong>denied</strong>.</p>
+          ${safeDenialReason ? `
           <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${denialReason}</p>
+            <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${safeDenialReason}</p>
           </div>` : ''}
           <p>If you believe this is an error, please visit the Barangay Hall for assistance.</p>
           <p>Thank you,<br/>Barangay Administration</p>
