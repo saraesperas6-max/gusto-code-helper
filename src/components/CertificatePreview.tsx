@@ -1,10 +1,12 @@
 import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { CertificateRequest } from '@/types/barangay';
 import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface CertificatePreviewProps {
   request: CertificateRequest;
@@ -168,12 +170,26 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
     setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
   };
 
+  const handleDownloadPDF = async () => {
+    if (!printRef.current) return;
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${cert.title} - ${request.residentName}.pdf`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>{cert.title} Preview</DialogTitle>
+            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF">
+              <Download className="h-4 w-4" />
+            </Button>
             <Button variant="outline" size="icon" onClick={handlePrint} title="Print Certificate">
               <Printer className="h-4 w-4" />
             </Button>
