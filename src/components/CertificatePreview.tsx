@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Printer } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { CertificateRequest } from '@/types/barangay';
 import { format } from 'date-fns';
@@ -147,15 +149,38 @@ const getCertificateBody = (request: CertificateRequest, address: string) => {
 
 const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, onOpenChange, residentAddress }) => {
   const cert = getCertificateBody(request, residentAddress || '');
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html><head><title>${cert.title}</title>
+      <style>
+        body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 40px; }
+        @media print { body { padding: 20px; } }
+      </style>
+      </head><body>${printRef.current.innerHTML}</body></html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{cert.title} Preview</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>{cert.title} Preview</DialogTitle>
+            <Button variant="outline" size="icon" onClick={handlePrint} title="Print Certificate">
+              <Printer className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
-        <div className="border-2 border-primary/20 rounded-lg bg-card p-8" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+        <div ref={printRef} className="border-2 border-primary/20 rounded-lg bg-card p-8" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <div className="w-16 h-16 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
