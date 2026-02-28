@@ -203,67 +203,67 @@ const DashboardPage: React.FC = () => {
     <div>
       <Topbar hideSearch />
       
-      <h2 className="text-2xl font-bold text-foreground mb-6">Dashboard Overview</h2>
+      <h2 className="text-lg sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">Dashboard Overview</h2>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-warning flex items-center justify-center">
-              <Clock className="h-6 w-6 text-warning-foreground" />
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-warning flex items-center justify-center shrink-0">
+              <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-warning-foreground" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
-              <p className="text-3xl font-bold">{pendingCount}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Pending Requests</p>
+              <p className="text-xl sm:text-3xl font-bold">{pendingCount}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-success-foreground" />
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-success flex items-center justify-center shrink-0">
+              <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-success-foreground" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Issued Today</p>
-              <p className="text-3xl font-bold">{approvedToday}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <Users className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Residents</p>
-              <p className="text-3xl font-bold">{totalResidents}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Issued Today</p>
+              <p className="text-xl sm:text-3xl font-bold">{approvedToday}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center">
-              <Award className="h-6 w-6 text-white" />
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <Users className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Certificates</p>
-              <p className="text-3xl font-bold">{totalCertificates}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Total Residents</p>
+              <p className="text-xl sm:text-3xl font-bold">{totalResidents}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-purple-600 flex items-center justify-center shrink-0">
+              <Award className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Total Certificates</p>
+              <p className="text-xl sm:text-3xl font-bold">{totalCertificates}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-6">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Weekly Request Volume</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+            <CardTitle className="text-sm sm:text-base font-semibold">Weekly Request Volume</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-72">
+          <CardContent className="p-3 sm:p-6">
+            <div className="h-48 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -278,11 +278,11 @@ const DashboardPage: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Certificate Distribution</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+            <CardTitle className="text-sm sm:text-base font-semibold">Certificate Distribution</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-72">
+          <CardContent className="p-3 sm:p-6">
+            <div className="h-48 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -318,12 +318,12 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Monthly Trend Line Graph */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Monthly Request Trend</CardTitle>
+      <Card className="mb-4 sm:mb-6">
+        <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+          <CardTitle className="text-sm sm:text-base font-semibold">Monthly Request Trend</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-72">
+        <CardContent className="p-3 sm:p-6">
+          <div className="h-48 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -339,8 +339,8 @@ const DashboardPage: React.FC = () => {
 
       {/* Recent Activity */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+        <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+          <CardTitle className="text-sm sm:text-base font-semibold">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -350,16 +350,16 @@ const DashboardPage: React.FC = () => {
             {visibleActivities.map((activity) => (
               <div 
                 key={activity.id} 
-                className="flex items-center gap-4 py-4 border-b last:border-0"
+                className="flex items-center gap-2 sm:gap-4 py-2.5 sm:py-4 border-b last:border-0"
               >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <activity.icon className="h-5 w-5 text-primary" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <activity.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground">{activity.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
+                  <p className="font-semibold text-foreground text-xs sm:text-sm">{activity.name}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground truncate">{activity.description}</p>
                 </div>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">{activity.date}</span>
+                <span className="text-[10px] sm:text-sm text-muted-foreground whitespace-nowrap">{activity.date}</span>
                 {activity.type === 'request' && (
                   <div className="flex gap-2">
                     <Button

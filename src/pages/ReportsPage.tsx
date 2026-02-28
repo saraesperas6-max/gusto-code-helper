@@ -100,47 +100,47 @@ const ReportsPage: React.FC = () => {
     <div>
       <Topbar searchPlaceholder="Search Reports..." onSearch={setSearchQuery} />
       
-      <h2 className="text-2xl font-bold text-foreground mb-4">Barangay Reports and Summaries</h2>
-      <div className="mb-6">
+      <h2 className="text-lg sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Barangay Reports and Summaries</h2>
+      <div className="mb-4 sm:mb-6">
         <DateFilter onFilterChange={setDateFilters} />
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-success-foreground" />
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-success flex items-center justify-center shrink-0">
+              <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-success-foreground" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Requests Issued (YTD)</p>
-              <p className="text-3xl font-bold">{requestsYTD}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Requests Issued (YTD)</p>
+              <p className="text-xl sm:text-3xl font-bold">{requestsYTD}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="w-12 h-12 rounded-full bg-warning flex items-center justify-center">
-              <Users className="h-6 w-6 text-warning-foreground" />
+          <CardContent className="flex items-center gap-2 sm:gap-4 p-3 sm:p-6">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-warning flex items-center justify-center shrink-0">
+              <Users className="h-4 w-4 sm:h-6 sm:w-6 text-warning-foreground" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Population Count</p>
-              <p className="text-3xl font-bold">{totalResidents}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground truncate">Population Count</p>
+              <p className="text-xl sm:text-3xl font-bold">{totalResidents}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-6">
         {/* Bar Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Monthly Certificate Issuance (Bar Chart)</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+            <CardTitle className="text-sm sm:text-base font-semibold">Monthly Certificate Issuance</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="p-3 sm:p-6">
+            <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -156,11 +156,11 @@ const ReportsPage: React.FC = () => {
 
         {/* Pie Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Certificate Types Distribution (Pie Chart)</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+            <CardTitle className="text-sm sm:text-base font-semibold">Certificate Types Distribution</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center">
+          <CardContent className="p-3 sm:p-6">
+            <div className="h-48 sm:h-64 flex items-center justify-center">
               {certificateTypeData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -192,10 +192,11 @@ const ReportsPage: React.FC = () => {
 
       {/* Certificate Log */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Detailed Certificate Issuance Log</CardTitle>
+        <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+          <CardTitle className="text-sm sm:text-base font-semibold">Certificate Issuance Log</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
+          <div className="overflow-auto scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>
@@ -228,6 +229,7 @@ const ReportsPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
+          </div>
           {filteredApprovedRequests.length > LOG_DEFAULT_VISIBLE && (
             <div className="flex justify-center pt-4">
               <Button variant="ghost" size="sm" onClick={() => setLogExpanded(!logExpanded)}>

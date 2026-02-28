@@ -32,15 +32,15 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
     : 'User';
 
   return (
-    <div className="bg-card rounded-lg shadow-sm p-4 mb-6 flex items-center justify-between">
+    <div className="bg-card rounded-lg shadow-sm p-2.5 sm:p-4 mb-4 sm:mb-6 flex items-center justify-between gap-2">
       {/* Search */}
       {!hideSearch && (
-        <div className="relative w-80">
+        <div className="relative flex-1 max-w-[200px] sm:max-w-xs md:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder={searchPlaceholder}
-            className="pl-10 bg-muted/50 border-0"
+            className="pl-10 bg-muted/50 border-0 h-8 sm:h-9 text-sm"
             onChange={(e) => onSearch?.(e.target.value)}
           />
         </div>
@@ -48,25 +48,25 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
       {hideSearch && <div />}
 
       {/* Right side */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-4">
         {/* Theme Toggle */}
-        <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9">
+          {theme === 'dark' ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
         </Button>
 
         {/* Notifications */}
         <Popover>
           <PopoverTrigger asChild>
             <button className="relative cursor-pointer">
-              <Bell className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />
+              <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-foreground transition-colors" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
+                <Badge className="absolute -top-2 -right-2 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[10px] sm:text-xs bg-destructive">
                   {unreadCount}
                 </Badge>
               )}
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="end">
+          <PopoverContent className="w-72 sm:w-80 p-0" align="end">
             <div className="flex items-center justify-between p-4 border-b">
               <h4 className="font-semibold text-sm">Notifications</h4>
               {unreadCount > 0 && (
@@ -120,15 +120,15 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
         </Popover>
 
         {/* User Info */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
             <img 
               src={logo} 
               alt="Barangay Logo" 
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="font-medium text-foreground">
+          <span className="font-medium text-foreground text-xs sm:text-sm hidden md:inline">
             {userName} <span className="text-muted-foreground">(Barangay Official)</span>
           </span>
         </div>
