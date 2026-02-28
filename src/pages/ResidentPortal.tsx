@@ -340,7 +340,7 @@ const ResidentPortal: React.FC = () => {
       </nav>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto p-8">
+      <div className="max-w-[95vw] xl:max-w-[1400px] mx-auto px-4 py-6 sm:px-6">
         {/* Pending Approval Notice */}
         {profile.status === 'Pending Approval' && (
           <Card className="mb-6 border-warning">
