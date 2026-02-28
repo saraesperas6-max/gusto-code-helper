@@ -281,9 +281,9 @@ const RequestsPage: React.FC = () => {
       <Topbar searchPlaceholder="Search requests..." onSearch={setSearchTerm} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 sm:gap-4 p-3 sm:p-6">
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 sm:gap-4 p-2 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <CardTitle className="text-sm sm:text-base">Certificate Requests</CardTitle>
+            <CardTitle className="text-xs sm:text-base">Certificate Requests</CardTitle>
             <DateFilter onFilterChange={setDateFilters} />
           </div>
           <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
@@ -397,17 +397,17 @@ const RequestsPage: React.FC = () => {
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6">
+        <CardContent className="p-2 sm:p-6">
           <div className="overflow-auto scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>REQUEST ID</TableHead>
-                <TableHead>RESIDENT</TableHead>
-                <TableHead>CERTIFICATE TYPE</TableHead>
-                <TableHead>DATE</TableHead>
-                <TableHead>STATUS</TableHead>
-                <TableHead className="text-center">ACTIONS</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">REQUEST ID</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">RESIDENT</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">TYPE</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">DATE</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">STATUS</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -417,13 +417,13 @@ const RequestsPage: React.FC = () => {
                   ref={request.id === highlightedId ? highlightRowRef : undefined}
                   className={request.id === highlightedId ? 'animate-pulse bg-primary/10 ring-2 ring-primary/30 rounded transition-all duration-500' : ''}
                 >
-                  <TableCell className="font-medium">REQ-{request.id.slice(-4).toUpperCase()}</TableCell>
-                  <TableCell>{request.residentName}</TableCell>
-                  <TableCell>{request.certificateType}</TableCell>
-                  <TableCell>{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{getStatusBadge(request.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
+                  <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">REQ-{request.id.slice(-4).toUpperCase()}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.residentName}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.certificateType}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell className="px-2 sm:px-4 py-2 sm:py-4">{getStatusBadge(request.status)}</TableCell>
+                  <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>

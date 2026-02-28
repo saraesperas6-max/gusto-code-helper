@@ -603,34 +603,34 @@ const ResidentPortal: React.FC = () => {
 
         {/* Requests Table */}
         <Card>
-          <CardHeader>
-            <CardTitle>My Certificate Requests</CardTitle>
+          <CardHeader className="p-3 sm:p-6">
+            <CardTitle className="text-sm sm:text-base">My Certificate Requests</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2 sm:p-6">
            <div className="overflow-auto scrollbar-hide">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Certificate Type</TableHead>
-                  <TableHead>Date Requested</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Purpose</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">#</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Type</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Status</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Purpose</TableHead>
+                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {myRequests.length > 0 ? (
                   (showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => (
                     <TableRow key={request.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{request.certificateType}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">{index + 1}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.certificateType}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">
                         {format(new Date(request.dateRequested), 'MMM dd, yyyy')}
                       </TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>{request.purpose}</TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">{getStatusBadge(request.status)}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
+                      <TableCell className="text-center px-2 sm:px-4 py-2 sm:py-4">
                         <div className="flex items-center justify-center gap-1">
                           <Button variant="ghost" size="icon" onClick={() => setViewingRequest(request)} title="View submitted form">
                             <Eye className="h-4 w-4" />
@@ -768,9 +768,9 @@ const ResidentPortal: React.FC = () => {
         </Card>
 
         {/* Trash Bin */}
-        <Card className="mt-6">
-          <CardHeader className="cursor-pointer" onClick={() => setShowTrash(!showTrash)}>
-            <CardTitle className="flex items-center gap-2 text-base">
+        <Card className="mt-4 sm:mt-6">
+          <CardHeader className="cursor-pointer p-3 sm:p-6" onClick={() => setShowTrash(!showTrash)}>
+            <CardTitle className="flex items-center gap-2 text-xs sm:text-base">
               <Trash2 className="h-5 w-5 text-muted-foreground" />
               Trash Bin
               {myTrashedRequests.length > 0 && (
@@ -780,26 +780,27 @@ const ResidentPortal: React.FC = () => {
             </CardTitle>
           </CardHeader>
           {showTrash && (
-            <CardContent>
+            <CardContent className="p-2 sm:p-6">
               {myTrashedRequests.length > 0 ? (
+                <div className="overflow-auto scrollbar-hide">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Certificate Type</TableHead>
-                      <TableHead>Date Requested</TableHead>
-                      <TableHead>Purpose</TableHead>
-                      <TableHead className="text-center">Action</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">#</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Type</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Date</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Purpose</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {myTrashedRequests.map((request, index) => (
                       <TableRow key={request.id} className="opacity-70">
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{request.certificateType}</TableCell>
-                        <TableCell>{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{request.purpose}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">{index + 1}</TableCell>
+                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.certificateType}</TableCell>
+                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
+                        <TableCell className="text-center px-2 sm:px-4 py-2 sm:py-4">
                           <div className="flex items-center justify-center gap-1">
                             <Button variant="ghost" size="icon" title="Restore request" onClick={async () => {
                               try {
@@ -820,6 +821,7 @@ const ResidentPortal: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-6">Trash bin is empty.</p>
               )}

@@ -276,9 +276,9 @@ const ResidentsPage: React.FC = () => {
       <Topbar searchPlaceholder="Search residents..." onSearch={setSearchTerm} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <CardTitle>Registered Residents & Signups</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 sm:gap-4 p-2 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <CardTitle className="text-xs sm:text-base">Registered Residents & Signups</CardTitle>
             <DateFilter onFilterChange={setDateFilters} />
           </div>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -340,30 +340,31 @@ const ResidentsPage: React.FC = () => {
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <Tabs defaultValue="active">
-            <TabsList className="mb-4">
-              <TabsTrigger value="active">Active Residents</TabsTrigger>
-              <TabsTrigger value="profiles">
-                <Users className="h-4 w-4 mr-1" />
+            <TabsList className="mb-3 sm:mb-4">
+              <TabsTrigger value="active" className="text-[10px] sm:text-sm px-2 sm:px-3">Active Residents</TabsTrigger>
+              <TabsTrigger value="profiles" className="text-[10px] sm:text-sm px-2 sm:px-3">
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                 Profiles
               </TabsTrigger>
-              <TabsTrigger value="trash">
-                <Trash2 className="h-4 w-4 mr-1" />
-                Trash Bin ({trashedResidents.length})
+              <TabsTrigger value="trash" className="text-[10px] sm:text-sm px-2 sm:px-3">
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                Trash ({trashedResidents.length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="active">
+              <div className="overflow-auto scrollbar-hide">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>NAME</TableHead>
-                    <TableHead>AGE</TableHead>
-                    <TableHead>ADDRESS</TableHead>
-                    <TableHead>CONTACT</TableHead>
-                    <TableHead>EMAIL</TableHead>
-                    <TableHead className="text-center">ACTIONS</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">NAME</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">AGE</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden md:table-cell">ADDRESS</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">CONTACT</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">EMAIL</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -376,14 +377,14 @@ const ResidentsPage: React.FC = () => {
                         highlightedResidentId === resident.id && 'animate-pulse ring-2 ring-primary ring-offset-2'
                       )}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[90px] sm:max-w-none truncate">
                         {resident.firstName} {resident.middleName || ''} {resident.lastName}
                       </TableCell>
-                      <TableCell>{resident.age}</TableCell>
-                      <TableCell>{resident.address}</TableCell>
-                      <TableCell>{resident.contact}</TableCell>
-                      <TableCell>{resident.email}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.age}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden md:table-cell">{resident.address}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.contact}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{resident.email}</TableCell>
+                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
                         <div className="flex items-center justify-center gap-2">
                           {resident.status === 'Pending Approval' && (
                             <Button 
@@ -436,6 +437,7 @@ const ResidentsPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+              </div>
               {filteredResidents.length > RESIDENTS_DEFAULT_VISIBLE && (
                 <div className="flex justify-center pt-4">
                   <Button variant="ghost" size="sm" onClick={() => setResidentsExpanded(!residentsExpanded)}>
@@ -449,28 +451,29 @@ const ResidentsPage: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="trash">
+              <div className="overflow-auto scrollbar-hide">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>NAME</TableHead>
-                    <TableHead>AGE</TableHead>
-                    <TableHead>ADDRESS</TableHead>
-                    <TableHead>CONTACT</TableHead>
-                    <TableHead>EMAIL</TableHead>
-                    <TableHead className="text-center">ACTIONS</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">NAME</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">AGE</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden md:table-cell">ADDRESS</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">CONTACT</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">EMAIL</TableHead>
+                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTrashedResidents.map((resident) => (
                     <TableRow key={resident.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[90px] sm:max-w-none truncate">
                         {resident.firstName} {resident.middleName || ''} {resident.lastName}
                       </TableCell>
-                      <TableCell>{resident.age}</TableCell>
-                      <TableCell>{resident.address}</TableCell>
-                      <TableCell>{resident.contact}</TableCell>
-                      <TableCell>{resident.email}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.age}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden md:table-cell">{resident.address}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.contact}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{resident.email}</TableCell>
+                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
                         <div className="flex items-center justify-center gap-2">
                           <Button 
                             variant="outline" 
@@ -522,6 +525,7 @@ const ResidentsPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </TabsContent>
 
             <TabsContent value="profiles">
