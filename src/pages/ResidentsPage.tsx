@@ -40,6 +40,8 @@ const ResidentsPage: React.FC = () => {
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   const [highlightedResidentId, setHighlightedResidentId] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
+  const [residentsExpanded, setResidentsExpanded] = useState(false);
+  const RESIDENTS_DEFAULT_VISIBLE = 5;
 
   // Handle highlight from notification click
   useEffect(() => {
@@ -365,7 +367,7 @@ const ResidentsPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredResidents.map((resident) => (
+                  {(residentsExpanded ? filteredResidents : filteredResidents.slice(0, RESIDENTS_DEFAULT_VISIBLE)).map((resident) => (
                     <TableRow 
                       key={resident.id}
                       ref={highlightedResidentId === resident.id ? highlightRef : undefined}
@@ -434,8 +436,15 @@ const ResidentsPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+              {filteredResidents.length > RESIDENTS_DEFAULT_VISIBLE && (
+                <div className="flex justify-center pt-4">
+                  <Button variant="ghost" size="sm" onClick={() => setResidentsExpanded(!residentsExpanded)}>
+                    {residentsExpanded ? 'Show Less' : `View More (${filteredResidents.length - RESIDENTS_DEFAULT_VISIBLE} more)`}
+                  </Button>
+                </div>
+              )}
               <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
-                <span>Showing {filteredResidents.length} of {residents.length} Results</span>
+                <span>Showing {residentsExpanded ? filteredResidents.length : Math.min(RESIDENTS_DEFAULT_VISIBLE, filteredResidents.length)} of {residents.length} Results</span>
               </div>
             </TabsContent>
 

@@ -57,6 +57,8 @@ const RequestsPage: React.FC = () => {
   const [approveTargetId, setApproveTargetId] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [requestsExpanded, setRequestsExpanded] = useState(false);
+  const REQUESTS_DEFAULT_VISIBLE = 5;
   const statusUpdateLockRef = useRef<Set<string>>(new Set());
   const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
 
@@ -408,7 +410,7 @@ const RequestsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.map((request) => (
+              {(requestsExpanded ? filteredRequests : filteredRequests.slice(0, REQUESTS_DEFAULT_VISIBLE)).map((request) => (
                 <TableRow
                   key={request.id}
                   ref={request.id === highlightedId ? highlightRowRef : undefined}
@@ -605,6 +607,13 @@ const RequestsPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
+          {filteredRequests.length > REQUESTS_DEFAULT_VISIBLE && (
+            <div className="flex justify-center pt-4">
+              <Button variant="ghost" size="sm" onClick={() => setRequestsExpanded(!requestsExpanded)}>
+                {requestsExpanded ? 'Show Less' : `View More (${filteredRequests.length - REQUESTS_DEFAULT_VISIBLE} more)`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

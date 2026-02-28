@@ -135,6 +135,9 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   // Combine request activities + login/logout logs
+  const [activityExpanded, setActivityExpanded] = useState(false);
+  const DEFAULT_VISIBLE = 5;
+
   const recentActivities = useMemo(() => {
     const requestActivities = requests.slice(0, 5).map(r => ({
       id: r.id,
@@ -162,9 +165,10 @@ const DashboardPage: React.FC = () => {
     }));
 
     return [...requestActivities, ...authActivities]
-      .sort((a, b) => b.time - a.time)
-      .slice(0, 10);
+      .sort((a, b) => b.time - a.time);
   }, [requests, activityLogs, residents]);
+
+  const visibleActivities = activityExpanded ? recentActivities : recentActivities.slice(0, DEFAULT_VISIBLE);
 
   const openApproveDialog = (id: string) => {
     setApproveTargetId(id);
@@ -343,7 +347,7 @@ const DashboardPage: React.FC = () => {
             {recentActivities.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">No recent activity</p>
             )}
-            {recentActivities.map((activity) => (
+            {visibleActivities.map((activity) => (
               <div 
                 key={activity.id} 
                 className="flex items-center gap-4 py-4 border-b last:border-0"
@@ -389,6 +393,13 @@ const DashboardPage: React.FC = () => {
               </div>
             ))}
           </div>
+          {recentActivities.length > DEFAULT_VISIBLE && (
+            <div className="flex justify-center pt-4">
+              <Button variant="ghost" size="sm" onClick={() => setActivityExpanded(!activityExpanded)}>
+                {activityExpanded ? 'Show Less' : `View More (${recentActivities.length - DEFAULT_VISIBLE} more)`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
