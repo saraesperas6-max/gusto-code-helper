@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Eye, Check, X, Undo2, FileText, User, MapPin, Phone, Mail, Calendar } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileCardList from '@/components/MobileCardList';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -398,16 +400,66 @@ const RequestsPage: React.FC = () => {
           </Dialog>
         </CardHeader>
         <CardContent className="p-2 sm:p-6">
-          <div className="overflow-auto scrollbar-hide">
+          {/* Mobile Card Layout */}
+          <div className="sm:hidden">
+            <MobileCardList
+              emptyMessage="No requests found."
+              items={(requestsExpanded ? filteredRequests : filteredRequests.slice(0, REQUESTS_DEFAULT_VISIBLE)).map((request) => ({
+                key: request.id,
+                className: request.id === highlightedId ? 'animate-pulse bg-primary/10 ring-2 ring-primary/30' : '',
+                fields: [
+                  { label: 'Resident', value: request.residentName },
+                  { label: 'Request ID', value: `REQ-${request.id.slice(-4).toUpperCase()}` },
+                  { label: 'Status', value: getStatusBadge(request.status) },
+                  { label: 'Type', value: request.certificateType },
+                  { label: 'Date', value: format(new Date(request.dateRequested), 'MMM dd, yyyy') },
+                ],
+                actions: (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSelectedRequest(request)}>
+                          <Eye className="h-3 w-3 mr-1" />View
+                        </Button>
+                      </DialogTrigger>
+                    </Dialog>
+                    {request.status === 'Pending' && (
+                      <>
+                        <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs" disabled={statusUpdatingId === request.id} onClick={() => openApproveDialog(request.id)}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => openDenyDialog(request.id)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+                    {request.status === 'Approved' && (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPreviewRequest(request)}>
+                        <FileText className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {(request.status === 'Approved' || request.status === 'Denied') && (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openUndoDialog(request.id)}>
+                        <Undo2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ),
+              }))}
+            />
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden sm:block overflow-auto scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">REQUEST ID</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">RESIDENT</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">TYPE</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">DATE</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">STATUS</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
+                <TableHead className="text-xs px-4">REQUEST ID</TableHead>
+                <TableHead className="text-xs px-4">RESIDENT</TableHead>
+                <TableHead className="text-xs px-4">TYPE</TableHead>
+                <TableHead className="text-xs px-4">DATE</TableHead>
+                <TableHead className="text-xs px-4">STATUS</TableHead>
+                <TableHead className="text-xs px-4 text-center">ACTIONS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -417,13 +469,13 @@ const RequestsPage: React.FC = () => {
                   ref={request.id === highlightedId ? highlightRowRef : undefined}
                   className={request.id === highlightedId ? 'animate-pulse bg-primary/10 ring-2 ring-primary/30 rounded transition-all duration-500' : ''}
                 >
-                  <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">REQ-{request.id.slice(-4).toUpperCase()}</TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.residentName}</TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.certificateType}</TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell className="px-2 sm:px-4 py-2 sm:py-4">{getStatusBadge(request.status)}</TableCell>
-                  <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
-                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                  <TableCell className="font-medium text-sm px-4 py-4">REQ-{request.id.slice(-4).toUpperCase()}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{request.residentName}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell className="px-4 py-4">{getStatusBadge(request.status)}</TableCell>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex items-center justify-center gap-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" onClick={() => setSelectedRequest(request)}>
@@ -438,7 +490,6 @@ const RequestsPage: React.FC = () => {
                             const resident = residents.find(r => r.id === selectedRequest.residentId);
                             return (
                             <div className="space-y-4">
-                              {/* Resident Profile Section */}
                               {resident && (
                                 <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border">
                                   <div
@@ -462,28 +513,12 @@ const RequestsPage: React.FC = () => {
                                   </div>
                                 </div>
                               )}
-
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Request ID</p>
-                                  <p className="font-medium">REQ-{selectedRequest.id.slice(-4).toUpperCase()}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Certificate Type</p>
-                                  <p className="font-medium">{selectedRequest.certificateType}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Purpose</p>
-                                  <p className="font-medium">{selectedRequest.purpose}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Date Requested</p>
-                                  <p className="font-medium">{format(new Date(selectedRequest.dateRequested), 'MMM dd, yyyy')}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Status</p>
-                                  {getStatusBadge(selectedRequest.status)}
-                                </div>
+                                <div><p className="text-sm text-muted-foreground">Request ID</p><p className="font-medium">REQ-{selectedRequest.id.slice(-4).toUpperCase()}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Certificate Type</p><p className="font-medium">{selectedRequest.certificateType}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Purpose</p><p className="font-medium">{selectedRequest.purpose}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Date Requested</p><p className="font-medium">{format(new Date(selectedRequest.dateRequested), 'MMM dd, yyyy')}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Status</p>{getStatusBadge(selectedRequest.status)}</div>
                               </div>
                               {selectedRequest.status === 'Denied' && (selectedRequest as any).denialReason && (
                                 <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
@@ -496,56 +531,25 @@ const RequestsPage: React.FC = () => {
                                   <p className="text-sm text-muted-foreground mb-2">Uploaded Requirements ({selectedRequest.uploadedPhotos.length} file{selectedRequest.uploadedPhotos.length > 1 ? 's' : ''})</p>
                                   <div className="grid grid-cols-2 gap-2">
                                     {selectedRequest.uploadedPhotos.map((photo, index) => (
-                                      <img 
-                                        key={index}
-                                        src={photo} 
-                                        alt={`Requirement ${index + 1}`} 
-                                        className="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                        onClick={() => setViewingPhoto(photo)}
-                                      />
+                                      <img key={index} src={photo} alt={`Requirement ${index + 1}`} className="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setViewingPhoto(photo)} />
                                     ))}
                                   </div>
                                 </div>
                               )}
                               {!selectedRequest.uploadedPhotos && selectedRequest.validIdFile && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground mb-2">Uploaded Documents</p>
-                                  <p className="text-sm font-medium">{selectedRequest.validIdFile}</p>
-                                </div>
+                                <div><p className="text-sm text-muted-foreground mb-2">Uploaded Documents</p><p className="text-sm font-medium">{selectedRequest.validIdFile}</p></div>
                               )}
                               {selectedRequest.status === 'Pending' && (
                                 <div className="flex justify-center gap-4 pt-4">
-                                  <Button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openApproveDialog(selectedRequest.id);
-                                    }}
-                                    disabled={statusUpdatingId === selectedRequest.id}
-                                    className="bg-success hover:bg-success/90"
-                                  >
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Approve
-                                  </Button>
-                                  <Button 
-                                    variant="destructive"
-                                    onClick={() => openDenyDialog(selectedRequest.id)}
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Deny
-                                  </Button>
+                                  <Button onClick={(e) => { e.stopPropagation(); openApproveDialog(selectedRequest.id); }} disabled={statusUpdatingId === selectedRequest.id} className="bg-success hover:bg-success/90"><Check className="mr-2 h-4 w-4" />Approve</Button>
+                                  <Button variant="destructive" onClick={() => openDenyDialog(selectedRequest.id)}><X className="mr-2 h-4 w-4" />Deny</Button>
                                 </div>
                               )}
                               {(selectedRequest.status === 'Approved' || selectedRequest.status === 'Denied') && (
                                 <div className="flex justify-center pt-4">
-                                  <Button 
-                                    variant="outline"
-                                    onClick={() => openUndoDialog(selectedRequest.id)}
-                                  >
-                                    <Undo2 className="mr-2 h-4 w-4" />
-                                    Undo — Revert to Pending
-                                  </Button>
+                                  <Button variant="outline" onClick={() => openUndoDialog(selectedRequest.id)}><Undo2 className="mr-2 h-4 w-4" />Undo — Revert to Pending</Button>
                                 </div>
-                               )}
+                              )}
                             </div>
                             );
                           })()}
@@ -553,46 +557,16 @@ const RequestsPage: React.FC = () => {
                       </Dialog>
                       {request.status === 'Pending' && (
                         <>
-                          <Button
-                            size="sm"
-                            className="bg-success hover:bg-success/90"
-                            disabled={statusUpdatingId === request.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openApproveDialog(request.id);
-                            }}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => openDenyDialog(request.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <Button size="sm" className="bg-success hover:bg-success/90" disabled={statusUpdatingId === request.id} onClick={(e) => { e.stopPropagation(); openApproveDialog(request.id); }}><Check className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="destructive" onClick={() => openDenyDialog(request.id)}><X className="h-4 w-4" /></Button>
                         </>
                       )}
                       {(request.status === 'Approved' || request.status === 'Denied') && (
                         <>
                           {request.status === 'Approved' && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setPreviewRequest(request)}
-                              title="Preview Certificate"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setPreviewRequest(request)} title="Preview Certificate"><FileText className="h-4 w-4" /></Button>
                           )}
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => openUndoDialog(request.id)}
-                            title="Undo — Revert to Pending"
-                          >
-                            <Undo2 className="h-4 w-4" />
-                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => openUndoDialog(request.id)} title="Undo — Revert to Pending"><Undo2 className="h-4 w-4" /></Button>
                         </>
                       )}
                     </div>
@@ -601,9 +575,7 @@ const RequestsPage: React.FC = () => {
               ))}
               {filteredRequests.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No requests found.
-                  </TableCell>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No requests found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Check, RotateCcw, Users } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileCardList from '@/components/MobileCardList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -355,16 +357,67 @@ const ResidentsPage: React.FC = () => {
             </TabsList>
 
             <TabsContent value="active">
-              <div className="overflow-auto scrollbar-hide">
+              {/* Mobile Card Layout */}
+              <div className="sm:hidden">
+                <MobileCardList
+                  emptyMessage="No residents found."
+                  items={(residentsExpanded ? filteredResidents : filteredResidents.slice(0, RESIDENTS_DEFAULT_VISIBLE)).map((resident) => ({
+                    key: resident.id,
+                    className: cn(
+                      resident.status === 'Pending Approval' && 'border-l-4 border-l-warning bg-warning/10',
+                      highlightedResidentId === resident.id && 'animate-pulse ring-2 ring-primary'
+                    ),
+                    fields: [
+                      { label: 'Name', value: `${resident.firstName} ${resident.middleName || ''} ${resident.lastName}` },
+                      { label: 'Age', value: resident.age },
+                      { label: 'Email', value: resident.email },
+                      { label: 'Contact', value: resident.contact },
+                      { label: 'Address', value: resident.address },
+                    ],
+                    actions: (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {resident.status === 'Pending Approval' && (
+                          <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs" onClick={() => handleApprove(resident.id)}>
+                            <Check className="h-3 w-3 mr-1" />Approve
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEditModal(resident)}>
+                          <Edit className="h-3 w-3 mr-1" />Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 text-xs">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Move to Trash Bin?</AlertDialogTitle>
+                              <AlertDialogDescription>This will move <strong>{resident.firstName} {resident.lastName}</strong> to the Trash Bin.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDelete(resident.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden sm:block overflow-auto scrollbar-hide">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">NAME</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">AGE</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden md:table-cell">ADDRESS</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">CONTACT</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">EMAIL</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
+                    <TableHead className="text-xs px-4">NAME</TableHead>
+                    <TableHead className="text-xs px-4">AGE</TableHead>
+                    <TableHead className="text-xs px-4 hidden md:table-cell">ADDRESS</TableHead>
+                    <TableHead className="text-xs px-4">CONTACT</TableHead>
+                    <TableHead className="text-xs px-4">EMAIL</TableHead>
+                    <TableHead className="text-xs px-4 text-center">ACTIONS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -377,50 +430,35 @@ const ResidentsPage: React.FC = () => {
                         highlightedResidentId === resident.id && 'animate-pulse ring-2 ring-primary ring-offset-2'
                       )}
                     >
-                      <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[90px] sm:max-w-none truncate">
+                      <TableCell className="font-medium text-sm px-4 py-4">
                         {resident.firstName} {resident.middleName || ''} {resident.lastName}
                       </TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.age}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden md:table-cell">{resident.address}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.contact}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{resident.email}</TableCell>
-                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
+                      <TableCell className="text-sm px-4 py-4">{resident.age}</TableCell>
+                      <TableCell className="text-sm px-4 py-4 hidden md:table-cell">{resident.address}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{resident.contact}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{resident.email}</TableCell>
+                      <TableCell className="px-4 py-4">
                         <div className="flex items-center justify-center gap-2">
                           {resident.status === 'Pending Approval' && (
-                            <Button 
-                              size="sm" 
-                              className="bg-success hover:bg-success/90"
-                              onClick={() => handleApprove(resident.id)}
-                            >
+                            <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleApprove(resident.id)}>
                               <Check className="h-4 w-4" />
                             </Button>
                           )}
                           {renderEditDialog(resident)}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Move to Trash Bin?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will move <strong>{resident.firstName} {resident.lastName}</strong> to the Trash Bin. You can restore this record later.
-                                </AlertDialogDescription>
+                                <AlertDialogDescription>This will move <strong>{resident.firstName} {resident.lastName}</strong> to the Trash Bin. You can restore this record later.</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => handleSoftDelete(resident.id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDelete(resident.id)}>Delete</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -430,9 +468,7 @@ const ResidentsPage: React.FC = () => {
                   ))}
                   {filteredResidents.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No residents found.
-                      </TableCell>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No residents found.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -451,64 +487,83 @@ const ResidentsPage: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="trash">
-              <div className="overflow-auto scrollbar-hide">
+              {/* Mobile Card Layout */}
+              <div className="sm:hidden">
+                <MobileCardList
+                  emptyMessage="Trash Bin is empty."
+                  items={filteredTrashedResidents.map((resident) => ({
+                    key: resident.id,
+                    className: 'opacity-70',
+                    fields: [
+                      { label: 'Name', value: `${resident.firstName} ${resident.middleName || ''} ${resident.lastName}` },
+                      { label: 'Age', value: resident.age },
+                      { label: 'Email', value: resident.email },
+                      { label: 'Contact', value: resident.contact },
+                    ],
+                    actions: (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleRestore(resident.id)}>
+                          <RotateCcw className="h-3 w-3 mr-1" />Restore
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 text-xs">
+                              <Trash2 className="h-3 w-3 mr-1" />Delete Forever
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Permanently Delete?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently delete <strong>{resident.firstName} {resident.lastName}</strong> and their account.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handlePermanentDelete(resident.id)}>Delete Forever</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden sm:block overflow-auto scrollbar-hide">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">NAME</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">AGE</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden md:table-cell">ADDRESS</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">CONTACT</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">EMAIL</TableHead>
-                    <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">ACTIONS</TableHead>
+                    <TableHead className="text-xs px-4">NAME</TableHead>
+                    <TableHead className="text-xs px-4">AGE</TableHead>
+                    <TableHead className="text-xs px-4 hidden md:table-cell">ADDRESS</TableHead>
+                    <TableHead className="text-xs px-4">CONTACT</TableHead>
+                    <TableHead className="text-xs px-4">EMAIL</TableHead>
+                    <TableHead className="text-xs px-4 text-center">ACTIONS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTrashedResidents.map((resident) => (
                     <TableRow key={resident.id}>
-                      <TableCell className="font-medium text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[90px] sm:max-w-none truncate">
-                        {resident.firstName} {resident.middleName || ''} {resident.lastName}
-                      </TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.age}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden md:table-cell">{resident.address}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{resident.contact}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{resident.email}</TableCell>
-                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">
+                      <TableCell className="font-medium text-sm px-4 py-4">{resident.firstName} {resident.middleName || ''} {resident.lastName}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{resident.age}</TableCell>
+                      <TableCell className="text-sm px-4 py-4 hidden md:table-cell">{resident.address}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{resident.contact}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{resident.email}</TableCell>
+                      <TableCell className="px-4 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRestore(resident.id)}
-                          >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Restore
-                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleRestore(resident.id)}><RotateCcw className="h-4 w-4 mr-1" />Restore</Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Delete Forever
-                              </Button>
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4 mr-1" />Delete Forever</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Permanently Delete?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete <strong>{resident.firstName} {resident.lastName}</strong> and their account. This action cannot be undone.
-                                </AlertDialogDescription>
+                                <AlertDialogDescription>This will permanently delete <strong>{resident.firstName} {resident.lastName}</strong> and their account. This action cannot be undone.</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => handlePermanentDelete(resident.id)}
-                                >
-                                  Delete Forever
-                                </AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handlePermanentDelete(resident.id)}>Delete Forever</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -518,9 +573,7 @@ const ResidentsPage: React.FC = () => {
                   ))}
                   {filteredTrashedResidents.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Trash Bin is empty.
-                      </TableCell>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Trash Bin is empty.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
