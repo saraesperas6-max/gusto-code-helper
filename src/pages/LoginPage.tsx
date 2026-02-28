@@ -116,10 +116,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4 relative overflow-hidden">
-      {/* Decorative background shapes matching the GIF */}
-      <div className="absolute top-[-80px] right-[-80px] w-[250px] h-[250px] rounded-full" style={{ background: 'hsl(350, 65%, 60%)' }} />
-      <div className="absolute bottom-[-60px] left-[-60px] w-[200px] h-[200px] rounded-full" style={{ background: 'hsl(40, 85%, 60%)' }} />
-      <div className="absolute bottom-[10%] right-[5%] w-[120px] h-[120px] rounded-full" style={{ background: 'hsl(170, 55%, 55%, 0.3)' }} />
 
       {/* Theme Toggle */}
       <Button
