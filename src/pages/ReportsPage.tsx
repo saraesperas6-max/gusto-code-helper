@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import MobileCardList from '@/components/MobileCardList';
 import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -196,33 +197,50 @@ const ReportsPage: React.FC = () => {
           <CardTitle className="text-sm sm:text-base font-semibold">Certificate Issuance Log</CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          <div className="overflow-auto scrollbar-hide">
+          {/* Mobile Card Layout */}
+          <div className="sm:hidden">
+            <MobileCardList
+              emptyMessage={searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
+              items={(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => ({
+                key: request.id,
+                fields: [
+                  { label: 'Resident', value: request.residentName },
+                  { label: 'Date Issued', value: request.dateProcessed ? format(new Date(request.dateProcessed), 'MMM dd, yyyy') : format(new Date(request.dateRequested), 'MMM dd, yyyy') },
+                  { label: 'Type', value: request.certificateType },
+                  { label: 'Purpose', value: request.purpose },
+                ],
+              }))}
+            />
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden sm:block overflow-auto scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">DATE ISSUED</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">TYPE</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">RESIDENT</TableHead>
-                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">PURPOSE</TableHead>
+                <TableHead className="text-xs px-4">DATE ISSUED</TableHead>
+                <TableHead className="text-xs px-4">TYPE</TableHead>
+                <TableHead className="text-xs px-4">RESIDENT</TableHead>
+                <TableHead className="text-xs px-4">PURPOSE</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">
+                  <TableCell className="text-sm px-4 py-4">
                     {request.dateProcessed 
                       ? format(new Date(request.dateProcessed), 'MMM dd, yyyy')
                       : format(new Date(request.dateRequested), 'MMM dd, yyyy')
                     }
                   </TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.certificateType}</TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.residentName}</TableCell>
-                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{request.residentName}</TableCell>
+                  <TableCell className="text-sm px-4 py-4">{request.purpose}</TableCell>
                 </TableRow>
               ))}
               {filteredApprovedRequests.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8 text-xs sm:text-sm">
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8 text-sm">
                     {searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
                   </TableCell>
                 </TableRow>

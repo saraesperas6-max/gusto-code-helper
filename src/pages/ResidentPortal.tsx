@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash, ShieldCheck, Home, Users, Coins, FileSignature, Briefcase } from 'lucide-react';
 import PersonalInformation from '@/components/PersonalInformation';
+import MobileCardList from '@/components/MobileCardList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -607,47 +608,77 @@ const ResidentPortal: React.FC = () => {
             <CardTitle className="text-sm sm:text-base">My Certificate Requests</CardTitle>
           </CardHeader>
           <CardContent className="p-2 sm:p-6">
-           <div className="overflow-auto scrollbar-hide">
+           {/* Mobile Card Layout */}
+           <div className="sm:hidden">
+             <MobileCardList
+               emptyMessage="No requests yet. Apply for a certificate to get started!"
+               items={(showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => ({
+                 key: request.id,
+                 fields: [
+                   { label: 'Type', value: request.certificateType },
+                   { label: '#', value: index + 1 },
+                   { label: 'Status', value: getStatusBadge(request.status) },
+                   { label: 'Date', value: format(new Date(request.dateRequested), 'MMM dd, yyyy') },
+                   { label: 'Purpose', value: request.purpose },
+                 ],
+                 actions: (
+                   <div className="flex items-center gap-1 flex-wrap">
+                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setViewingRequest(request)}>
+                       <Eye className="h-3 w-3 mr-1" />View
+                     </Button>
+                     {request.status === 'Approved' && (
+                       <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setPreviewRequest(request)}>
+                         <FileText className="h-3 w-3 mr-1 text-primary" />Certificate
+                       </Button>
+                     )}
+                     {request.status === 'Pending' && (
+                       <>
+                         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setEditingRequest(request); setEditPurpose(request.purpose); setEditNotes(request.notes || ''); }}>
+                           <Pencil className="h-3 w-3 mr-1" />Edit
+                         </Button>
+                         <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => setCancellingRequestId(request.id)}>
+                           <XCircle className="h-3 w-3 mr-1" />Cancel
+                         </Button>
+                       </>
+                     )}
+                   </div>
+                 ),
+               }))}
+             />
+           </div>
+
+           {/* Desktop Table Layout */}
+           <div className="hidden sm:block overflow-auto scrollbar-hide">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">#</TableHead>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Type</TableHead>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Status</TableHead>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Purpose</TableHead>
-                  <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">Action</TableHead>
+                  <TableHead className="text-xs px-4">#</TableHead>
+                  <TableHead className="text-xs px-4">Type</TableHead>
+                  <TableHead className="text-xs px-4">Date</TableHead>
+                  <TableHead className="text-xs px-4">Status</TableHead>
+                  <TableHead className="text-xs px-4">Purpose</TableHead>
+                  <TableHead className="text-xs px-4 text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {myRequests.length > 0 ? (
                   (showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => (
                     <TableRow key={request.id}>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">{index + 1}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.certificateType}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">
-                        {format(new Date(request.dateRequested), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="px-2 sm:px-4 py-2 sm:py-4">{getStatusBadge(request.status)}</TableCell>
-                      <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
-                      <TableCell className="text-center px-2 sm:px-4 py-2 sm:py-4">
+                      <TableCell className="text-sm px-4 py-4">{index + 1}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="px-4 py-4">{getStatusBadge(request.status)}</TableCell>
+                      <TableCell className="text-sm px-4 py-4">{request.purpose}</TableCell>
+                      <TableCell className="text-center px-4 py-4">
                         <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setViewingRequest(request)} title="View submitted form">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setViewingRequest(request)} title="View submitted form"><Eye className="h-4 w-4" /></Button>
                           {request.status === 'Approved' && (
-                            <Button variant="ghost" size="icon" onClick={() => setPreviewRequest(request)} title="View Certificate">
-                              <FileText className="h-4 w-4 text-primary" />
-                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setPreviewRequest(request)} title="View Certificate"><FileText className="h-4 w-4 text-primary" /></Button>
                           )}
                           {request.status === 'Pending' && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => { setEditingRequest(request); setEditPurpose(request.purpose); setEditNotes(request.notes || ''); }} title="Edit request">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setCancellingRequestId(request.id)} title="Cancel request" className="text-destructive hover:text-destructive">
-                                <XCircle className="h-4 w-4" />
-                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setEditingRequest(request); setEditPurpose(request.purpose); setEditNotes(request.notes || ''); }} title="Edit request"><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => setCancellingRequestId(request.id)} title="Cancel request" className="text-destructive hover:text-destructive"><XCircle className="h-4 w-4" /></Button>
                             </>
                           )}
                         </div>
@@ -656,9 +687,7 @@ const ResidentPortal: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No requests yet. Apply for a certificate to get started!
-                    </TableCell>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No requests yet. Apply for a certificate to get started!</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -666,12 +695,7 @@ const ResidentPortal: React.FC = () => {
             </div>
             {myRequests.length > 5 && (
               <div className="flex justify-center pt-3 pb-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAllRequests(prev => !prev)}
-                  className="text-primary"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowAllRequests(prev => !prev)} className="text-primary">
                   {showAllRequests ? 'Show Less' : `View All (${myRequests.length})`}
                 </Button>
               </div>
@@ -780,38 +804,61 @@ const ResidentPortal: React.FC = () => {
             </CardTitle>
           </CardHeader>
           {showTrash && (
-            <CardContent className="p-2 sm:p-6">
+             <CardContent className="p-2 sm:p-6">
               {myTrashedRequests.length > 0 ? (
-                <div className="overflow-auto scrollbar-hide">
+                <>
+                {/* Mobile Card Layout */}
+                <div className="sm:hidden">
+                  <MobileCardList
+                    items={myTrashedRequests.map((request, index) => ({
+                      key: request.id,
+                      className: 'opacity-70',
+                      fields: [
+                        { label: 'Type', value: request.certificateType },
+                        { label: '#', value: index + 1 },
+                        { label: 'Date', value: format(new Date(request.dateRequested), 'MMM dd, yyyy') },
+                        { label: 'Purpose', value: request.purpose },
+                      ],
+                      actions: (
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={async () => {
+                            try { await restoreRequest(request.id); toast({ title: 'Request restored' }); } catch { toast({ title: 'Failed to restore', variant: 'destructive' }); }
+                          }}>
+                            <RotateCcw className="h-3 w-3 mr-1" />Restore
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => setDeletingPermanentlyId(request.id)}>
+                            <Trash className="h-3 w-3 mr-1" />Delete
+                          </Button>
+                        </div>
+                      ),
+                    }))}
+                  />
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden sm:block overflow-auto scrollbar-hide">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">#</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">Type</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Date</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">Purpose</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 text-center">Action</TableHead>
+                      <TableHead className="text-xs px-4">#</TableHead>
+                      <TableHead className="text-xs px-4">Type</TableHead>
+                      <TableHead className="text-xs px-4">Date</TableHead>
+                      <TableHead className="text-xs px-4">Purpose</TableHead>
+                      <TableHead className="text-xs px-4 text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {myTrashedRequests.map((request, index) => (
                       <TableRow key={request.id} className="opacity-70">
-                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">{index + 1}</TableCell>
-                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[80px] sm:max-w-none truncate">{request.certificateType}</TableCell>
-                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
-                        <TableCell className="text-center px-2 sm:px-4 py-2 sm:py-4">
+                        <TableCell className="text-sm px-4 py-4">{index + 1}</TableCell>
+                        <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
+                        <TableCell className="text-sm px-4 py-4">{format(new Date(request.dateRequested), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell className="text-sm px-4 py-4">{request.purpose}</TableCell>
+                        <TableCell className="text-center px-4 py-4">
                           <div className="flex items-center justify-center gap-1">
                             <Button variant="ghost" size="icon" title="Restore request" onClick={async () => {
-                              try {
-                                await restoreRequest(request.id);
-                                toast({ title: 'Request restored' });
-                              } catch {
-                                toast({ title: 'Failed to restore', variant: 'destructive' });
-                              }
-                            }}>
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
+                              try { await restoreRequest(request.id); toast({ title: 'Request restored' }); } catch { toast({ title: 'Failed to restore', variant: 'destructive' }); }
+                            }}><RotateCcw className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" title="Delete permanently" className="text-destructive hover:text-destructive" onClick={() => setDeletingPermanentlyId(request.id)}>
                               <Trash className="h-4 w-4" />
                             </Button>
@@ -822,6 +869,7 @@ const ResidentPortal: React.FC = () => {
                   </TableBody>
                 </Table>
                 </div>
+                </>
               ) : (
                 <p className="text-center text-muted-foreground py-6">Trash bin is empty.</p>
               )}
