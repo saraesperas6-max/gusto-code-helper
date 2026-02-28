@@ -312,7 +312,7 @@ const ResidentPortal: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-muted/30 overflow-x-hidden">
        {/* Navbar */}
        <nav className="bg-card shadow-sm px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -340,7 +340,7 @@ const ResidentPortal: React.FC = () => {
       </nav>
 
       {/* Content */}
-      <div className="max-w-[95vw] xl:max-w-[1400px] mx-auto px-4 py-6 sm:px-6">
+      <div className="max-w-[95vw] xl:max-w-[1400px] mx-auto px-3 py-4 sm:px-6 sm:py-6">
         {/* Pending Approval Notice */}
         {profile.status === 'Pending Approval' && (
           <Card className="mb-6 border-warning">
@@ -351,11 +351,11 @@ const ResidentPortal: React.FC = () => {
         )}
 
         {/* Welcome Card */}
-        <Card className="mb-6">
-          <CardContent className="flex items-center justify-between p-6">
+        <Card className="mb-4 sm:mb-6">
+          <CardContent className="flex items-center justify-between p-3 sm:p-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Welcome, {profile.first_name}!</h1>
-              <p className="text-muted-foreground">Manage your certificate requests here.</p>
+              <h1 className="text-base sm:text-2xl font-bold text-foreground">Welcome, {profile.first_name}!</h1>
+              <p className="text-xs sm:text-base text-muted-foreground">Manage your certificate requests here.</p>
             </div>
           </CardContent>
         </Card>
@@ -607,6 +607,7 @@ const ResidentPortal: React.FC = () => {
             <CardTitle>My Certificate Requests</CardTitle>
           </CardHeader>
           <CardContent>
+           <div className="overflow-auto scrollbar-hide">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -661,7 +662,8 @@ const ResidentPortal: React.FC = () => {
                   </TableRow>
                 )}
               </TableBody>
-            </Table>
+             </Table>
+            </div>
             {myRequests.length > 5 && (
               <div className="flex justify-center pt-3 pb-1">
                 <Button
