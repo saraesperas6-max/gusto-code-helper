@@ -156,16 +156,16 @@ const PersonalInformation: React.FC = () => {
       {/* Clickable Profile Trigger — avatar + name inline */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 cursor-pointer group focus:outline-none"
+        className="flex items-center gap-2 sm:gap-3 cursor-pointer group focus:outline-none"
       >
-        <div className="relative w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
+        <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
           {avatarUrl ? (
             <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <User className="h-5 w-5 text-muted-foreground" />
+            <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           )}
         </div>
-        <div className="text-right">
+        <div className="text-right hidden sm:block">
           <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{fullName}</p>
           <p className="text-sm text-muted-foreground">Resident</p>
         </div>
