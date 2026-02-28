@@ -48,8 +48,30 @@ Deno.serve(async (req) => {
           <p>Dear <strong>${residentName}</strong>,</p>
           <p>We are pleased to inform you that your request for <strong>${certificateType}</strong> has been <strong>approved</strong>.</p>
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 0; color: #166534;"><strong>⚠️ Important:</strong> Please claim your certificate at the Barangay Hall within <strong>3 days</strong>. 
+            <p style="margin: 0 0 8px 0; color: #166534;"><strong>⚠️ Important:</strong> Please claim your certificate at the Barangay Hall within <strong>3 days</strong>. 
             Failure to claim within this period will result in your request being automatically declined.</p>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="margin: 0 0 8px 0; font-weight: bold; color: #1e293b;">💰 Payment Schedule:</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 6px 0; color: #334155;">Documentary Stamp</td>
+                <td style="padding: 6px 0; text-align: right; color: #334155;">₱30.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 6px 0; color: #334155;">Residency</td>
+                <td style="padding: 6px 0; text-align: right; color: #334155;">₱200.00</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 6px 0; color: #334155;">Low Income</td>
+                <td style="padding: 6px 0; text-align: right; color: #334155;">₱100.00</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155;">Clearance</td>
+                <td style="padding: 6px 0; text-align: right; color: #334155;">₱100.00</td>
+              </tr>
+            </table>
+            <p style="margin: 12px 0 0 0; color: #475569; font-size: 13px;">🕘 <strong>Office Hours:</strong> 9:00 AM – 4:00 PM</p>
           </div>
           <p>Thank you,<br/>Barangay Administration</p>
         </div>
