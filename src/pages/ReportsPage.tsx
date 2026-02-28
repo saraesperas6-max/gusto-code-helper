@@ -200,29 +200,29 @@ const ReportsPage: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>DATE ISSUED</TableHead>
-                <TableHead>CERTIFICATE TYPE</TableHead>
-                <TableHead>RESIDENT</TableHead>
-                <TableHead>PURPOSE</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">DATE ISSUED</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">TYPE</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4">RESIDENT</TableHead>
+                <TableHead className="text-[10px] sm:text-xs px-2 sm:px-4 hidden sm:table-cell">PURPOSE</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4">
                     {request.dateProcessed 
                       ? format(new Date(request.dateProcessed), 'MMM dd, yyyy')
                       : format(new Date(request.dateRequested), 'MMM dd, yyyy')
                     }
                   </TableCell>
-                  <TableCell>{request.certificateType}</TableCell>
-                  <TableCell>{request.residentName}</TableCell>
-                  <TableCell>{request.purpose}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.certificateType}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 max-w-[70px] sm:max-w-none truncate">{request.residentName}</TableCell>
+                  <TableCell className="text-[10px] sm:text-sm px-2 sm:px-4 py-2 sm:py-4 hidden sm:table-cell">{request.purpose}</TableCell>
                 </TableRow>
               ))}
               {filteredApprovedRequests.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8 text-xs sm:text-sm">
                     {searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
                   </TableCell>
                 </TableRow>
