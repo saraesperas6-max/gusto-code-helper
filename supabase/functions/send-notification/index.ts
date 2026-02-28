@@ -12,6 +12,46 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- Authentication & Authorization ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: roleData } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Secrets ---
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
@@ -21,6 +61,20 @@ Deno.serve(async (req) => {
 
     if (!residentEmail || !residentName) {
       throw new Error("Missing required fields: residentEmail, residentName");
+    }
+
+    // Validate recipient email exists in profiles table
+    const { data: profileData } = await adminClient
+      .from("profiles")
+      .select("email")
+      .eq("email", residentEmail)
+      .single();
+
+    if (!profileData) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Recipient email not found in system" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     let subject: string;
@@ -115,9 +169,8 @@ Deno.serve(async (req) => {
 
     if (!emailRes.ok) {
       console.error("Resend error:", emailData);
-      // Don't throw - email failure shouldn't block the flow
       return new Response(
-        JSON.stringify({ success: false, error: "Email sending failed", details: emailData }),
+        JSON.stringify({ success: false, error: "Email sending failed" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -129,7 +182,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: "An error occurred processing the notification" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
