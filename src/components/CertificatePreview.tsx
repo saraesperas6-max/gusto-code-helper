@@ -174,22 +174,34 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
 
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
-    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    // Temporarily reset scale to render at full A4 size for consistent PDF output
+    const wrapper = printRef.current.parentElement;
+    const prevTransform = wrapper?.style.transform;
+    const prevHeight = wrapper?.style.height;
+    const prevMaxWidth = wrapper?.style.maxWidth;
+    if (wrapper) {
+      wrapper.style.transform = 'none';
+      wrapper.style.height = 'auto';
+      wrapper.style.maxWidth = 'none';
+    }
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: A4_WIDTH_PX, height: A4_HEIGHT_PX });
+    // Restore scale
+    if (wrapper) {
+      wrapper.style.transform = prevTransform || '';
+      wrapper.style.height = prevHeight || '';
+      wrapper.style.maxWidth = prevMaxWidth || '';
+    }
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgRatio = canvas.height / canvas.width;
-    const pageRatio = pdfHeight / pdfWidth;
-    const finalWidth = pdfWidth;
-    const finalHeight = Math.min(imgRatio * pdfWidth, pdfHeight);
-    pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight);
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     pdf.save(`${cert.title} - ${request.residentName}.pdf`);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[680px] w-[96vw] max-h-[95dvh] overflow-y-auto p-2 sm:p-6 [&>button]:top-2 [&>button]:right-2 [&>button]:h-7 [&>button]:w-7 sm:[&>button]:top-4 sm:[&>button]:right-4 sm:[&>button]:h-8 sm:[&>button]:w-8">
+      <DialogContent className="max-w-[680px] w-[96vw] max-h-[95dvh] overflow-hidden p-2 sm:p-6 [&>button]:top-2 [&>button]:right-2 [&>button]:h-7 [&>button]:w-7 sm:[&>button]:top-4 sm:[&>button]:right-4 sm:[&>button]:h-8 sm:[&>button]:w-8">
         <DialogHeader className="pb-1 sm:pb-2 pr-10">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-xs sm:text-lg truncate">{cert.title} Preview</DialogTitle>
