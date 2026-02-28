@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { CertificateRequest } from '@/types/barangay';
 import { format } from 'date-fns';
@@ -153,22 +153,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
   const cert = getCertificateBody(request, residentAddress || '');
   const printRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html><head><title>${cert.title}</title>
-      <style>
-        body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 40px; }
-        @media print { body { padding: 20px; } }
-      </style>
-      </head><body>${printRef.current.innerHTML}</body></html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
-  };
+
 
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
@@ -190,17 +175,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
             <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF">
               <Download className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={handlePrint} title="Print Certificate">
-              <Printer className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
 
         <div ref={printRef} className="border-2 border-primary/20 rounded-lg bg-card p-8" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
-            <div className="w-16 h-16 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
-              <img src={logo} alt="Barangay Logo" className="w-full h-full object-cover" />
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img src={logo} alt="Barangay Logo" className="w-16 h-16 object-contain" />
             </div>
             <div className="text-center flex-1 px-4">
               <p className="text-[10px] text-muted-foreground italic">Republic of the Philippines</p>
@@ -210,8 +192,8 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
               <p className="text-[10px] text-muted-foreground italic">Sofia V. Reyes Alley, Yandoc St.</p>
               <p className="text-[10px] text-muted-foreground italic">Tel. No. 424-4085</p>
             </div>
-            <div className="w-16 h-16 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
-              <img src={logo} alt="Barangay Seal" className="w-full h-full object-cover" />
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img src={logo} alt="Barangay Seal" className="w-16 h-16 object-contain" />
             </div>
           </div>
 
