@@ -149,11 +149,28 @@ const getCertificateBody = (request: CertificateRequest, address: string) => {
   }
 };
 
+const A4_WIDTH_PX = 595;
+const A4_HEIGHT_PX = 842;
+
 const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, onOpenChange, residentAddress }) => {
   const cert = getCertificateBody(request, residentAddress || '');
   const printRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = React.useState(1);
 
-
+  React.useEffect(() => {
+    if (!open) return;
+    const updateScale = () => {
+      if (containerRef.current) {
+        const availableWidth = containerRef.current.clientWidth - 16;
+        const s = Math.min(1, availableWidth / A4_WIDTH_PX);
+        setScale(s);
+      }
+    };
+    const timer = setTimeout(updateScale, 50);
+    window.addEventListener('resize', updateScale);
+    return () => { clearTimeout(timer); window.removeEventListener('resize', updateScale); };
+  }, [open]);
 
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
@@ -161,79 +178,106 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgRatio = canvas.height / canvas.width;
+    const pageRatio = pdfHeight / pdfWidth;
+    const finalWidth = pdfWidth;
+    const finalHeight = Math.min(imgRatio * pdfWidth, pdfHeight);
+    pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight);
     pdf.save(`${cert.title} - ${request.residentName}.pdf`);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[680px] w-[95vw] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>{cert.title} Preview</DialogTitle>
-            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF">
+            <DialogTitle className="text-sm sm:text-lg">{cert.title} Preview</DialogTitle>
+            <Button variant="outline" size="icon" onClick={handleDownloadPDF} title="Download PDF" className="h-8 w-8 sm:h-9 sm:w-9">
               <Download className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div ref={printRef} className="border-2 border-primary/20 rounded-lg bg-card p-8" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <img src={logo} alt="Barangay Logo" className="w-16 h-16 object-contain" />
-            </div>
-            <div className="text-center flex-1 px-4">
-              <p className="text-[10px] text-muted-foreground italic">Republic of the Philippines</p>
-              <p className="text-[10px] text-muted-foreground italic">Cordillera Administrative Region</p>
-              <p className="text-[10px] text-muted-foreground italic">City of Baguio</p>
-              <p className="text-sm font-bold tracking-wide">PALMA-URBANO BARANGAY</p>
-              <p className="text-[10px] text-muted-foreground italic">Sofia V. Reyes Alley, Yandoc St.</p>
-              <p className="text-[10px] text-muted-foreground italic">Tel. No. 424-4085</p>
-            </div>
-            <div className="w-16 h-16 flex items-center justify-center">
-              <img src={logo} alt="Barangay Seal" className="w-16 h-16 object-contain" />
-            </div>
-          </div>
-
-          {/* Banner */}
-          <div className="bg-primary/10 text-center py-1 rounded mb-4">
-            <p className="text-sm italic font-semibold text-primary">Office of the Punong Barangay</p>
-          </div>
-
-          <hr className="border-primary/30 mb-6" />
-
-          {/* Certificate Title */}
-          <h2 className="text-xl font-bold text-center italic mb-6">{cert.title}</h2>
-
-          {/* Certificate Body */}
-          <div className="space-y-4 text-sm leading-relaxed px-2">
-            {cert.body}
-          </div>
-
-          {/* Signature Area */}
-          <div className="mt-10 space-y-8">
-            <div>
-              <p className="text-sm">Requested by:</p>
-              <div className="mt-6 w-48">
-                <div className="border-t border-foreground/50" />
-                <p className="text-xs text-center italic mt-1">Signature of Applicant</p>
+        <div ref={containerRef} className="flex justify-center overflow-hidden">
+          <div
+            style={{
+              width: A4_WIDTH_PX,
+              minHeight: A4_HEIGHT_PX,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top center',
+              marginBottom: `${(A4_HEIGHT_PX * scale) - A4_HEIGHT_PX}px`,
+            }}
+          >
+            <div
+              ref={printRef}
+              className="bg-white border border-border/40 shadow-sm"
+              style={{
+                width: A4_WIDTH_PX,
+                minHeight: A4_HEIGHT_PX,
+                padding: '48px 40px',
+                fontFamily: "'Times New Roman', Times, serif",
+                color: '#1a1a1a',
+                boxSizing: 'border-box',
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-16 h-16 flex items-center justify-center">
+                  <img src={logo} alt="Barangay Logo" className="w-16 h-16 object-contain" />
+                </div>
+                <div className="text-center flex-1 px-4">
+                  <p style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>Republic of the Philippines</p>
+                  <p style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>Cordillera Administrative Region</p>
+                  <p style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>City of Baguio</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.05em' }}>PALMA-URBANO BARANGAY</p>
+                  <p style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>Sofia V. Reyes Alley, Yandoc St.</p>
+                  <p style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>Tel. No. 424-4085</p>
+                </div>
+                <div className="w-16 h-16 flex items-center justify-center">
+                  <img src={logo} alt="Barangay Seal" className="w-16 h-16 object-contain" />
+                </div>
               </div>
-            </div>
-            <div className="flex justify-end">
-              <div className="text-center">
-                <p className="text-sm">Attested by:</p>
-                <div className="mt-6 w-48">
-                  <p className="font-bold text-sm">HON. FLORIDA T. GACAYAN</p>
-                  <p className="text-xs italic">Punong Barangay</p>
+
+              {/* Banner */}
+              <div style={{ background: 'hsl(220 70% 50% / 0.1)', textAlign: 'center', padding: '4px 0', borderRadius: 4, marginBottom: 16 }}>
+                <p style={{ fontSize: 13, fontStyle: 'italic', fontWeight: 600, color: 'hsl(220 70% 50%)' }}>Office of the Punong Barangay</p>
+              </div>
+
+              <hr style={{ borderColor: 'hsl(220 70% 50% / 0.3)', marginBottom: 24 }} />
+
+              {/* Certificate Title */}
+              <h2 style={{ fontSize: 20, fontWeight: 700, textAlign: 'center', fontStyle: 'italic', marginBottom: 24 }}>{cert.title}</h2>
+
+              {/* Certificate Body */}
+              <div className="space-y-4" style={{ fontSize: 13, lineHeight: 1.7, padding: '0 8px' }}>
+                {cert.body}
+              </div>
+
+              {/* Signature Area */}
+              <div style={{ marginTop: 40 }} className="space-y-8">
+                <div>
+                  <p style={{ fontSize: 13 }}>Requested by:</p>
+                  <div style={{ marginTop: 24, width: 192 }}>
+                    <div style={{ borderTop: '1px solid #666' }} />
+                    <p style={{ fontSize: 11, textAlign: 'center', fontStyle: 'italic', marginTop: 4 }}>Signature of Applicant</p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="text-center">
+                    <p style={{ fontSize: 13 }}>Attested by:</p>
+                    <div style={{ marginTop: 24, width: 192 }}>
+                      <p style={{ fontWeight: 700, fontSize: 13 }}>HON. FLORIDA T. GACAYAN</p>
+                      <p style={{ fontSize: 11, fontStyle: 'italic' }}>Punong Barangay</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground italic text-center">This is a digital preview. The official printed certificate may differ in format.</p>
+        <p className="text-[10px] sm:text-xs text-muted-foreground italic text-center">This is a digital preview. The official printed certificate may differ in format.</p>
       </DialogContent>
     </Dialog>
   );
