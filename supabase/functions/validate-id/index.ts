@@ -16,6 +16,9 @@ const ACCEPTED_IDS = [
   "Senior Citizen's ID Card",
 ];
 
+const MAX_BASE64_SIZE = 7 * 1024 * 1024; // ~5MB image as base64
+const ALLOWED_MIME_PREFIXES = ['data:image/jpeg', 'data:image/png', 'data:image/webp', 'data:image/gif'];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,6 +29,30 @@ serve(async (req) => {
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ valid: false, error: "No image provided" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    // Server-side size validation
+    if (typeof imageBase64 !== 'string' || imageBase64.length > MAX_BASE64_SIZE) {
+      return new Response(JSON.stringify({ valid: false, error: "File too large (max 5MB)" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    // Server-side mime type validation
+    if (!imageBase64.startsWith('data:image/')) {
+      return new Response(JSON.stringify({ valid: false, error: "Invalid image format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    const hasValidType = ALLOWED_MIME_PREFIXES.some(prefix => imageBase64.startsWith(prefix));
+    if (!hasValidType) {
+      return new Response(JSON.stringify({ valid: false, error: "Unsupported image type. Use JPEG, PNG, WebP, or GIF." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
