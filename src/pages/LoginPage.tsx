@@ -115,7 +115,7 @@ const LoginPage: React.FC = () => {
   const switchToLogin = () => { setIsSignUp(false); resetForm(); };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-2 sm:p-4 relative overflow-hidden">
 
       {/* Theme Toggle */}
       <Button
@@ -127,23 +127,25 @@ const LoginPage: React.FC = () => {
         {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </Button>
 
-      <div className="w-full max-w-[900px] min-h-[560px] rounded-2xl shadow-2xl overflow-hidden flex bg-card relative">
+      <div className="w-full max-w-[900px] md:min-h-[560px] rounded-2xl shadow-2xl overflow-hidden flex bg-card relative">
 
         {/* ===== FORM PANELS CONTAINER ===== */}
-        <div className="w-full flex relative">
+        <div className="w-full flex relative overflow-hidden">
 
           {/* ===== LOGIN FORM (left side) ===== */}
           <div
             className={`
-              w-full md:w-1/2 flex flex-col items-center justify-center p-8
-              transition-all duration-700 ease-in-out
-              ${isSignUp ? 'md:opacity-0 md:pointer-events-none' : 'opacity-100'}
+              w-full md:w-1/2 flex flex-col items-center justify-center p-6 sm:p-8
+              transition-all duration-500 ease-in-out
+              ${isSignUp
+                ? 'hidden md:flex md:opacity-0 md:pointer-events-none'
+                : 'opacity-100'}
             `}
           >
             <div className="w-full max-w-sm">
               <div className="text-center mb-6">
                 <img src={logo} alt="Logo" className="w-14 h-14 mx-auto rounded-full object-cover mb-3 md:hidden" />
-                <h1 className="text-2xl font-bold" style={{ color: 'hsl(170, 55%, 45%)' }}>Sign in</h1>
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'hsl(170, 55%, 45%)' }}>Sign in</h1>
                 <p className="text-xs text-muted-foreground mt-1">Barangay Palma-Urbano</p>
               </div>
 
@@ -213,22 +215,22 @@ const LoginPage: React.FC = () => {
           {/* ===== SIGN UP FORM (right side) ===== */}
           <div
             className={`
-              w-full md:w-1/2 flex flex-col items-center justify-center p-8 overflow-y-auto max-h-[90vh]
-              transition-all duration-700 ease-in-out
+              w-full md:w-1/2 flex flex-col items-center justify-start md:justify-center p-6 sm:p-8 overflow-y-auto
+              transition-all duration-500 ease-in-out
               ${isSignUp
-                ? 'opacity-100 relative'
-                : 'md:opacity-0 md:pointer-events-none absolute md:relative right-0 top-0 h-full'}
+                ? 'opacity-100 relative max-h-[100vh] md:max-h-[90vh]'
+                : 'hidden md:flex md:opacity-0 md:pointer-events-none'}
             `}
           >
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-sm py-4 md:py-0">
               <div className="text-center mb-4">
                 <img src={logo} alt="Logo" className="w-14 h-14 mx-auto rounded-full object-cover mb-3 md:hidden" />
-                <h1 className="text-2xl font-bold" style={{ color: 'hsl(170, 55%, 45%)' }}>Create Account</h1>
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'hsl(170, 55%, 45%)' }}>Create Account</h1>
                 <p className="text-xs text-muted-foreground mt-1">Barangay Palma-Urbano</p>
               </div>
 
               <form onSubmit={handleSignUp} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="First Name *" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" required />
@@ -236,7 +238,7 @@ const LoginPage: React.FC = () => {
                   <Input placeholder="Last Name *" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                 </div>
                 <Input placeholder="Middle Name (optional)" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="relative">
                     <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Age *" value={age} onChange={(e) => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) setAge(v); }} className="pl-10" required />
@@ -281,7 +283,7 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ===== SLIDING OVERLAY PANEL ===== */}
+        {/* ===== SLIDING OVERLAY PANEL (desktop only) ===== */}
         <div
           className={`
             hidden md:flex absolute top-0 h-full w-1/2 flex-col items-center justify-center text-center px-10 z-20
@@ -292,7 +294,6 @@ const LoginPage: React.FC = () => {
             transform: isSignUp ? 'translateX(0%)' : 'translateX(100%)',
           }}
         >
-          {/* Decorative diamond shapes on the overlay */}
           <div className="absolute top-8 left-8 w-10 h-10 border-2 border-white/20 rotate-45" />
           <div className="absolute bottom-16 right-12 w-8 h-8 border-2 border-white/15 rotate-45" />
           <div className="absolute top-1/3 right-6 w-6 h-6 bg-white/10 rotate-45" />
