@@ -1,9 +1,27 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const createUserSchema = z.object({
+  action: z.literal('create'),
+  email: z.string().email().max(255),
+  password: z.string().min(8).max(100),
+  firstName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s.\-']+$/),
+  lastName: z.string().min(1).max(100).regex(/^[a-zA-ZÀ-ÿ\s.\-']+$/),
+  middleName: z.string().max(100).regex(/^[a-zA-ZÀ-ÿ\s.\-']*$/).optional().nullable(),
+  age: z.union([z.string().regex(/^\d+$/).transform(Number), z.number()]).pipe(z.number().int().min(0).max(150)).optional().nullable(),
+  address: z.string().max(500).optional().nullable(),
+  contact: z.string().max(50).regex(/^[0-9+\s()\-]*$/).optional().nullable(),
+})
+
+const deleteUserSchema = z.object({
+  action: z.literal('delete'),
+  userId: z.string().uuid(),
+})
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,11 +52,22 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Forbidden: admin only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 
-  const body = await req.json()
-  const { action } = body
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+
+  const { action } = body as { action?: string }
 
   if (req.method === 'POST' && action === 'create') {
-    const { email, password, firstName, lastName, middleName, age, address, contact } = body
+    const parsed = createUserSchema.safeParse(body)
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: 'Invalid input', details: parsed.error.issues.map(i => i.message) }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const { email, password, firstName, lastName, middleName, age, address, contact } = parsed.data
 
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
@@ -48,9 +77,9 @@ Deno.serve(async (req) => {
         first_name: firstName,
         last_name: lastName,
         middle_name: middleName || null,
-        age: age ? parseInt(age) : null,
-        address,
-        contact,
+        age: age ?? null,
+        address: address || null,
+        contact: contact || null,
       },
     })
 
@@ -67,7 +96,12 @@ Deno.serve(async (req) => {
   }
 
   if (req.method === 'POST' && action === 'delete') {
-    const { userId } = body
+    const parsed = deleteUserSchema.safeParse(body)
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: 'Invalid input', details: parsed.error.issues.map(i => i.message) }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const { userId } = parsed.data
 
     // Delete profile first
     await adminClient.from('profiles').delete().eq('user_id', userId)
