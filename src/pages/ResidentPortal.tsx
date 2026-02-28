@@ -314,27 +314,27 @@ const ResidentPortal: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted/30">
        {/* Navbar */}
-       <nav className="bg-card shadow-sm px-8 py-4 flex items-center justify-between">
-         <div className="flex items-center gap-3">
-           <div className="w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
+       <nav className="bg-card shadow-sm px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-primary/30 overflow-hidden bg-primary/10 flex items-center justify-center">
              <img src={logo} alt="Barangay Logo" className="w-full h-full object-cover" />
            </div>
-           <span className="font-semibold text-lg text-primary">Palma-Urbano Portal</span>
+           <span className="font-semibold text-sm sm:text-lg text-primary hidden xs:inline">Palma-Urbano Portal</span>
          </div>
-         <div className="flex items-center gap-4">
+         <div className="flex items-center gap-1.5 sm:gap-4">
            {/* Theme Toggle */}
-           <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
-             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+           <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9">
+             {theme === 'dark' ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
            </Button>
            <PersonalInformation />
           <Button 
             variant="outline" 
             size="sm" 
-            className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+            className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-8 px-2 sm:px-3 text-xs sm:text-sm"
             onClick={() => setShowLogoutDialog(true)}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            <LogOut className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </nav>
@@ -363,19 +363,20 @@ const ResidentPortal: React.FC = () => {
         {/* REQUEST CERTIFICATE - Card Grid */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-foreground text-center mb-6 tracking-wide uppercase">Request Certificate</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
             {CERTIFICATE_TYPES.map((type) => (
               <Card
                 key={type}
-                className="flex flex-col items-center text-center p-6 hover:shadow-lg transition-shadow border"
+                className="flex flex-col items-center text-center p-2 sm:p-6 hover:shadow-lg transition-shadow border"
               >
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 ${CERTIFICATE_ICON_COLORS[type] || 'bg-muted text-muted-foreground'}`}>
-                  {CERTIFICATE_ICONS[type] || <FileText className="h-8 w-8" />}
+                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 ${CERTIFICATE_ICON_COLORS[type] || 'bg-muted text-muted-foreground'} [&_svg]:h-5 [&_svg]:w-5 sm:[&_svg]:h-8 sm:[&_svg]:w-8`}>
+                  {CERTIFICATE_ICONS[type] || <FileText className="h-5 w-5 sm:h-8 sm:w-8" />}
                 </div>
-                <h3 className="font-semibold text-foreground text-sm mb-1">{type}</h3>
-                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{CERTIFICATE_DESCRIPTIONS[type]}</p>
+                <h3 className="font-semibold text-foreground text-[10px] sm:text-sm mb-0.5 sm:mb-1 leading-tight">{type}</h3>
+                <p className="text-[9px] sm:text-xs text-muted-foreground mb-2 sm:mb-4 leading-snug hidden sm:block">{CERTIFICATE_DESCRIPTIONS[type]}</p>
                 <Button
                   size="sm"
+                  className="text-[10px] sm:text-sm h-7 sm:h-9 px-2 sm:px-3"
                   disabled={profile.status !== 'Active'}
                   onClick={() => {
                     setCertificateType(type);
