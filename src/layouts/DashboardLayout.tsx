@@ -17,20 +17,20 @@ const DashboardLayout: React.FC = () => {
         style={{ marginLeft: sidebarOpen ? '16rem' : '0' }}
       >
         {/* Top bar with hamburger */}
-        <header className="sticky top-0 z-20 flex items-center h-14 px-4 bg-sidebar backdrop-blur-sm border-b border-sidebar-border">
+        <header className="sticky top-0 z-20 flex items-center h-12 sm:h-14 px-3 sm:px-4 bg-sidebar backdrop-blur-sm border-b border-sidebar-border">
           {!sidebarOpen && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="text-sidebar-foreground hover:bg-sidebar-accent h-9 w-9"
+              className="text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8 sm:h-9 sm:w-9"
             >
               <Menu className="h-5 w-5" />
             </Button>
           )}
         </header>
 
-        <main className="p-6">
+        <main className="p-3 sm:p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

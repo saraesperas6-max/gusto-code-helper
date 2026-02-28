@@ -281,9 +281,9 @@ const RequestsPage: React.FC = () => {
       <Topbar searchPlaceholder="Search requests..." onSearch={setSearchTerm} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <CardTitle>Certificate Requests</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2 sm:gap-4 p-3 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <CardTitle className="text-sm sm:text-base">Certificate Requests</CardTitle>
             <DateFilter onFilterChange={setDateFilters} />
           </div>
           <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
@@ -397,7 +397,8 @@ const RequestsPage: React.FC = () => {
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
+          <div className="overflow-auto scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>
@@ -607,6 +608,7 @@ const RequestsPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
+          </div>
           {filteredRequests.length > REQUESTS_DEFAULT_VISIBLE && (
             <div className="flex justify-center pt-4">
               <Button variant="ghost" size="sm" onClick={() => setRequestsExpanded(!requestsExpanded)}>
