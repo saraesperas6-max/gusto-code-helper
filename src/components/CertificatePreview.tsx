@@ -1,13 +1,10 @@
 import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Download } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { CertificateRequest } from '@/types/barangay';
 import { format } from 'date-fns';
-import { useAuth } from '@/context/AuthContext';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 interface CertificatePreviewProps {
   request: CertificateRequest;
@@ -153,80 +150,22 @@ const getCertificateBody = (request: CertificateRequest, address: string) => {
 const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, onOpenChange, residentAddress }) => {
   const cert = getCertificateBody(request, residentAddress || '');
   const printRef = useRef<HTMLDivElement>(null);
-  const { isAdmin } = useAuth();
-
-  const getComputedStyles = () => {
-    const root = document.documentElement;
-    const getVar = (name: string) => getComputedStyle(root).getPropertyValue(name).trim();
-    return {
-      primary: getVar('--primary'),
-      foreground: getVar('--foreground'),
-      mutedForeground: getVar('--muted-foreground'),
-      cardBg: getVar('--card'),
-    };
-  };
 
   const handlePrint = () => {
     if (!printRef.current) return;
-    const vars = getComputedStyles();
-    const content = printRef.current.innerHTML;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`
       <html><head><title>${cert.title}</title>
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Times New Roman', Times, serif; padding: 40px; color: hsl(${vars.foreground}); background: white; }
-        .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
-        .italic { font-style: italic; } .underline { text-decoration: underline; }
-        .text-center { text-align: center; }
-        .leading-relaxed { line-height: 1.625; }
-        .flex { display: flex; } .flex-1 { flex: 1; }
-        .items-center { align-items: center; } .justify-between { justify-content: space-between; } .justify-end { justify-content: flex-end; }
-        .mb-2 { margin-bottom: 0.5rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; }
-        .mt-1 { margin-top: 0.25rem; } .mt-6 { margin-top: 1.5rem; } .mt-10 { margin-top: 2.5rem; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-        .p-8 { padding: 2rem; }
-        .space-y-4 > * + * { margin-top: 1rem; } .space-y-8 > * + * { margin-top: 2rem; }
-        .text-xs { font-size: 0.75rem; } .text-sm { font-size: 0.875rem; } .text-xl { font-size: 1.25rem; }
-        .text-\\[10px\\] { font-size: 10px; }
-        .tracking-wide { letter-spacing: 0.025em; }
-        .rounded { border-radius: 0.25rem; } .rounded-full { border-radius: 9999px; } .rounded-lg { border-radius: 0.5rem; }
-        .overflow-hidden { overflow: hidden; }
-        .w-16 { width: 4rem; } .h-16 { height: 4rem; } .w-48 { width: 12rem; }
-        .w-full { width: 100%; } .h-full { height: 100%; }
-        .object-cover { object-fit: cover; }
-        .border-2 { border: 2px solid hsla(${vars.primary}, 0.2); }
-        .border-t { border-top: 1px solid hsla(${vars.foreground}, 0.5); }
-        hr { border: none; border-top: 1px solid hsla(${vars.primary}, 0.3); }
-        .text-muted-foreground { color: hsl(${vars.mutedForeground}); }
-        .text-primary { color: hsl(${vars.primary}); }
-        .bg-primary\\/10, .bg-primary-10 { background-color: hsla(${vars.primary}, 0.1); }
-        .border-primary\\/30 { border-color: hsla(${vars.primary}, 0.3); }
-        img { width: 100%; height: 100%; object-fit: cover; }
-        @media print { body { padding: 20px; } @page { margin: 1cm; } }
+        body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 40px; }
+        @media print { body { padding: 20px; } }
       </style>
-      </head><body>${content}</body></html>
+      </head><body>${printRef.current.innerHTML}</body></html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!printRef.current) return;
-    const canvas = await html2canvas(printRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${cert.title} - ${request.residentName}.pdf`);
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
   };
 
   return (
@@ -235,17 +174,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>{cert.title} Preview</DialogTitle>
-            {isAdmin ? (
-              <Button variant="outline" size="sm" onClick={handlePrint} title="Print Certificate" className="gap-2">
-                <Printer className="h-4 w-4" />
-                Print
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={handleDownloadPDF} title="Download as PDF" className="gap-2">
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-            )}
+            <Button variant="outline" size="icon" onClick={handlePrint} title="Print Certificate">
+              <Printer className="h-4 w-4" />
+            </Button>
           </div>
         </DialogHeader>
 
