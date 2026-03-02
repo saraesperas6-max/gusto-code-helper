@@ -64,6 +64,14 @@ const LoginPage: React.FC = () => {
       setError('Password must be at least 6 characters.');
       return;
     }
+    if (parseInt(age) > 120 || parseInt(age) < 1) {
+      setError('Age must be between 1 and 120.');
+      return;
+    }
+    if (contact.length !== 11) {
+      setError('Contact number must be exactly 11 digits.');
+      return;
+    }
     setLoading(true);
     const { error } = await registerResident({
       firstName, lastName, middleName, age: parseInt(age), address, contact, email, password,
@@ -264,11 +272,11 @@ const LoginPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 md:gap-3">
                   <div className="relative">
                     <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Age *" value={age} onChange={(e) => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) setAge(v); }} className="pl-10" required />
+                    <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Age *" value={age} onChange={(e) => { const v = e.target.value; if (v === '' || (/^\d+$/.test(v) && parseInt(v) <= 120)) setAge(v); }} className="pl-10" required maxLength={3} />
                   </div>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Contact # *" value={contact} onChange={(e) => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) setContact(v); }} className="pl-10" required />
+                    <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Contact # *" value={contact} onChange={(e) => { const v = e.target.value; if (v === '' || (/^\d+$/.test(v) && v.length <= 11)) setContact(v); }} className="pl-10" required maxLength={11} />
                   </div>
                 </div>
                 <div className="relative">
