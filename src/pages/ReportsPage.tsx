@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import ReportsLogContent from '@/components/ReportsLogContent';
+import AdminActivityLog from '@/components/AdminActivityLog';
 import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Topbar from '@/components/Topbar';
@@ -188,6 +189,11 @@ const ReportsPage: React.FC = () => {
           <ReportsLogContent requests={filteredApprovedRequests} searchQuery={searchQuery} />
         </CardContent>
       </Card>
+
+      {/* Admin Activity Log */}
+      <div className="mt-4 sm:mt-6">
+        <AdminActivityLog searchQuery={searchQuery} dateFilters={dateFilters} />
+      </div>
     </div>
   );
 };
