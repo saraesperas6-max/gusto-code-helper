@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
   const switchToLogin = () => { setIsSignUp(false); resetForm(); };
 
   return (
-    <div className="h-[100dvh] flex items-center justify-center bg-muted p-0 md:p-4 relative overflow-hidden">
+    <div className="h-[100dvh] flex items-center justify-center bg-muted p-0 md:p-4 relative overflow-hidden overflow-y-auto">
 
       {/* Theme Toggle */}
       <Button
@@ -254,7 +254,7 @@ const LoginPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="w-full max-w-sm flex-1 flex flex-col justify-center px-5 py-3 md:p-8 overflow-y-auto">
+            <div className="w-full max-w-sm flex-1 flex flex-col justify-start md:justify-center px-5 py-3 md:p-8 overflow-y-auto">
               <div className="text-center mb-2 md:mb-4">
                 <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'hsl(170, 55%, 45%)' }}>Create Account</h1>
                 <p className="text-xs text-muted-foreground mt-0.5 hidden md:block">Barangay Palma-Urbano</p>
