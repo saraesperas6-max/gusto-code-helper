@@ -137,6 +137,16 @@ const ResidentsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setFormError('');
+    if (parseInt(formData.age) > 120 || parseInt(formData.age) < 1) {
+      setFormError('Age must be between 1 and 120.');
+      setLoading(false);
+      return;
+    }
+    if (formData.contact.length !== 11 || !/^\d+$/.test(formData.contact)) {
+      setFormError('Contact number must be exactly 11 digits.');
+      setLoading(false);
+      return;
+    }
     try {
       await addResident({
         lastName: formData.lastName,
@@ -341,11 +351,11 @@ const ResidentsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Age</Label>
-                    <Input type="number" placeholder="30" min="1" max="120" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} required />
+                    <Input type="text" inputMode="numeric" placeholder="30" value={formData.age} onChange={(e) => { const v = e.target.value; if (v === '' || (/^\d+$/.test(v) && parseInt(v) <= 120)) setFormData({ ...formData, age: v }); }} required maxLength={3} />
                   </div>
                   <div>
                     <Label>Contact Number</Label>
-                    <Input placeholder="09171234567" value={formData.contact} onChange={(e) => setFormData({ ...formData, contact: e.target.value })} required />
+                    <Input type="text" inputMode="numeric" placeholder="09171234567" value={formData.contact} onChange={(e) => { const v = e.target.value; if (v === '' || (/^\d+$/.test(v) && v.length <= 11)) setFormData({ ...formData, contact: v }); }} required maxLength={11} />
                   </div>
                 </div>
                 <div>
