@@ -246,24 +246,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const softDeleteResident = async (userId: string) => {
+    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('user_id', userId).maybeSingle();
+    const resName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : userId;
     await supabase.from('profiles').update({ deleted_at: new Date().toISOString() } as any).eq('user_id', userId);
-    await logAdminAction(`Moved resident to trash: ${userId}`);
+    await logAdminAction(`Moved resident to trash: ${resName}`);
     await fetchData();
   };
 
   const restoreResident = async (userId: string) => {
+    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('user_id', userId).maybeSingle();
+    const resName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : userId;
     await supabase.from('profiles').update({ deleted_at: null } as any).eq('user_id', userId);
-    await logAdminAction(`Restored resident from trash: ${userId}`);
+    await logAdminAction(`Restored resident from trash: ${resName}`);
     await fetchData();
   };
 
   const permanentlyDeleteResident = async (userId: string) => {
+    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('user_id', userId).maybeSingle();
+    const resName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : userId;
     const { data, error } = await supabase.functions.invoke('admin-users', {
       body: { action: 'delete', userId },
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
-    await logAdminAction(`Permanently deleted resident: ${userId}`);
+    await logAdminAction(`Permanently deleted resident: ${resName}`);
     await fetchData();
   };
 
