@@ -29,7 +29,6 @@ import { supabase } from '@/integrations/supabase/client'; // kept for potential
 import { Resident } from '@/types/barangay';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
 
 const ResidentsPage: React.FC = () => {
   const { residents, trashedResidents, addResident, updateResident, softDeleteResident, restoreResident, permanentlyDeleteResident, approveResident } = useData();
@@ -51,7 +50,6 @@ const ResidentsPage: React.FC = () => {
     const residentId = searchParams.get('highlightResident');
     if (residentId) {
       setHighlightedResidentId(residentId);
-      setResidentsExpanded(true); // Expand list so the resident is visible
       setSearchParams({}, { replace: true });
       // Clear highlight after animation
       const timer = setTimeout(() => setHighlightedResidentId(null), 3000);
@@ -105,8 +103,7 @@ const ResidentsPage: React.FC = () => {
         return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth() && rd.getDate() === d.getDate();
       });
     }
-    // Sort newest first by createdAt
-    return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return result.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
   }, [residents, searchTerm, dateFilters]);
 
   const filteredTrashedResidents = useMemo(() => {
@@ -174,17 +171,7 @@ const ResidentsPage: React.FC = () => {
   const handleSoftDelete = async (id: string) => {
     try {
       await softDeleteResident(id);
-      const deletedResident = residents.find(r => r.id === id);
-      const name = deletedResident ? `${deletedResident.firstName} ${deletedResident.lastName}` : 'Resident';
-      toast({
-        title: `${name} moved to Trash Bin`,
-        description: 'You can undo this action.',
-        action: (
-          <ToastAction altText="Undo" onClick={() => handleRestore(id)}>
-            Undo
-          </ToastAction>
-        ),
-      });
+      toast({ title: 'Resident moved to Trash Bin' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
@@ -208,24 +195,13 @@ const ResidentsPage: React.FC = () => {
     }
   };
 
-  const [approveResidentDialogOpen, setApproveResidentDialogOpen] = useState(false);
-  const [approveResidentTargetId, setApproveResidentTargetId] = useState<string | null>(null);
-
-  const openApproveResidentDialog = (id: string) => {
-    setApproveResidentTargetId(id);
-    setApproveResidentDialogOpen(true);
-  };
-
-  const handleApproveConfirm = async () => {
-    if (!approveResidentTargetId) return;
+  const handleApprove = async (id: string) => {
     try {
-      await approveResident(approveResidentTargetId);
+      await approveResident(id);
       toast({ title: 'Resident approved' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
-    setApproveResidentDialogOpen(false);
-    setApproveResidentTargetId(null);
   };
 
   const openEditModal = (resident: Resident) => {
@@ -401,7 +377,7 @@ const ResidentsPage: React.FC = () => {
                     actions: (
                       <div className="flex items-center gap-1 flex-wrap">
                         {resident.status === 'Pending Approval' && (
-                          <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs" onClick={() => openApproveResidentDialog(resident.id)}>
+                          <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs" onClick={() => handleApprove(resident.id)}>
                             <Check className="h-3 w-3 mr-1" />Approve
                           </Button>
                         )}
@@ -464,7 +440,7 @@ const ResidentsPage: React.FC = () => {
                       <TableCell className="px-4 py-4">
                         <div className="flex items-center justify-center gap-2">
                           {resident.status === 'Pending Approval' && (
-                            <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => openApproveResidentDialog(resident.id)}>
+                            <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleApprove(resident.id)}>
                               <Check className="h-4 w-4" />
                             </Button>
                           )}
@@ -614,25 +590,6 @@ const ResidentsPage: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Approve Resident Confirmation Dialog */}
-      <AlertDialog open={approveResidentDialogOpen} onOpenChange={setApproveResidentDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Approve Resident?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {(() => {
-                const r = residents.find(r => r.id === approveResidentTargetId);
-                return r ? `Are you sure you want to approve ${r.firstName} ${r.lastName}? They will gain full access to the system.` : 'Are you sure you want to approve this resident?';
-              })()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-success text-success-foreground hover:bg-success/90" onClick={handleApproveConfirm}>Approve</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
