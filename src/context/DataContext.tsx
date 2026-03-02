@@ -192,6 +192,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, [user, userRole, fetchData]);
 
+  const logAdminAction = async (action: string) => {
+    if (!user) return;
+    try {
+      await supabase.from('activity_logs').insert({ user_id: user.id, action });
+    } catch (err) {
+      console.error('Failed to log admin action:', err);
+    }
+  };
+
   const addResident = async (residentData: { lastName: string; firstName: string; middleName?: string; age: number; address: string; contact: string; email: string; password: string; status: ResidentStatus }) => {
     const { data, error } = await supabase.functions.invoke('admin-users', {
       body: {
@@ -208,6 +217,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
+    await logAdminAction(`Registered resident: ${residentData.firstName} ${residentData.lastName}`);
     await fetchData();
   };
 
@@ -221,6 +231,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.contact !== undefined) updateData.contact = data.contact;
 
     await supabase.from('profiles').update(updateData).eq('user_id', userId);
+    const name = `${data.firstName || ''} ${data.lastName || ''}`.trim() || userId;
+    await logAdminAction(`Edited resident profile: ${name}`);
     await fetchData();
   };
 
@@ -235,11 +247,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const softDeleteResident = async (userId: string) => {
     await supabase.from('profiles').update({ deleted_at: new Date().toISOString() } as any).eq('user_id', userId);
+    await logAdminAction(`Moved resident to trash: ${userId}`);
     await fetchData();
   };
 
   const restoreResident = async (userId: string) => {
     await supabase.from('profiles').update({ deleted_at: null } as any).eq('user_id', userId);
+    await logAdminAction(`Restored resident from trash: ${userId}`);
     await fetchData();
   };
 
@@ -249,23 +263,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
+    await logAdminAction(`Permanently deleted resident: ${userId}`);
     await fetchData();
   };
 
   const approveResident = async (userId: string) => {
-    // Get resident profile for email
     const { data: profile } = await supabase.from('profiles').select('email, first_name, last_name').eq('user_id', userId).single();
     
     await supabase.from('profiles').update({ status: 'Active' }).eq('user_id', userId);
 
-    // Send approval email notification
+    const resName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : userId;
+    await logAdminAction(`Approved resident: ${resName}`);
+
     if (profile?.email) {
       try {
         await supabase.functions.invoke('send-notification', {
           body: {
             type: 'resident-approved',
             residentEmail: profile.email,
-            residentName: `${profile.first_name} ${profile.last_name}`.trim(),
+            residentName: resName,
           },
         });
       } catch (emailErr) {
@@ -288,6 +304,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     await supabase.from('certificate_requests').insert(insertData);
+    await logAdminAction(`Created ${requestData.certificateType} request for ${requestData.residentName}`);
     await fetchData();
   };
 
@@ -296,6 +313,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       status,
       date_processed: new Date().toISOString(),
     }).eq('id', id);
+    await logAdminAction(`${status} certificate request: ${id.slice(0, 8).toUpperCase()}`);
     await fetchData();
   };
 
@@ -304,6 +322,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.purpose !== undefined) updateData.purpose = data.purpose;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
     await supabase.from('certificate_requests').update(updateData).eq('id', id);
+    await logAdminAction(`Edited request: ${id.slice(0, 8).toUpperCase()}`);
     await fetchData();
   };
 
