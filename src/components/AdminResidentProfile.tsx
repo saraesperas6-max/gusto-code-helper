@@ -30,9 +30,11 @@ interface ResidentProfile {
 interface AdminResidentProfileProps {
   residents: ResidentProfile[];
   onProfileUpdated: () => void;
+  autoOpenResidentId?: string | null;
+  onAutoOpenHandled?: () => void;
 }
 
-const AdminResidentProfile: React.FC<AdminResidentProfileProps> = ({ residents, onProfileUpdated }) => {
+const AdminResidentProfile: React.FC<AdminResidentProfileProps> = ({ residents, onProfileUpdated, autoOpenResidentId, onAutoOpenHandled }) => {
   const { toast } = useToast();
   const [selectedResident, setSelectedResident] = useState<ResidentProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -59,6 +61,17 @@ const AdminResidentProfile: React.FC<AdminResidentProfileProps> = ({ residents, 
     setPhoneError('');
     setIsEditing(false);
   };
+
+  // Auto-open resident from notification click
+  useEffect(() => {
+    if (autoOpenResidentId && residents.length > 0) {
+      const target = residents.find(r => r.user_id === autoOpenResidentId);
+      if (target) {
+        openProfile(target);
+        onAutoOpenHandled?.();
+      }
+    }
+  }, [autoOpenResidentId, residents]);
 
   const closeProfile = () => {
     setSelectedResident(null);
