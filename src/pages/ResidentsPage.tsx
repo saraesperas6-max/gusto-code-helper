@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Check, RotateCcw, Users } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePagination } from '@/hooks/use-pagination';
 import MobileCardList from '@/components/MobileCardList';
+import PaginationControls from '@/components/PaginationControls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,9 +45,7 @@ const ResidentsPage: React.FC = () => {
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
   const [highlightedResidentId, setHighlightedResidentId] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
-  const [residentsExpanded, setResidentsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
-  const RESIDENTS_DEFAULT_VISIBLE = 5;
 
   const [notificationResidentId, setNotificationResidentId] = useState<string | null>(null);
 
@@ -115,6 +115,8 @@ const ResidentsPage: React.FC = () => {
     // Sort newest first by registration date
     return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [residents, searchTerm, dateFilters]);
+
+  const { paginatedItems: paginatedResidents, currentPage: resPage, totalPages: resTotalPages, goToPage: goToResPage, startIndex: resStart, endIndex: resEnd, totalItems: resTotal } = usePagination(filteredResidents);
 
   const filteredTrashedResidents = useMemo(() => {
     let result = trashedResidents.filter(
@@ -388,7 +390,7 @@ const ResidentsPage: React.FC = () => {
               <div className="sm:hidden">
                 <MobileCardList
                   emptyMessage="No residents found."
-                  items={(residentsExpanded ? filteredResidents : filteredResidents.slice(0, RESIDENTS_DEFAULT_VISIBLE)).map((resident) => ({
+                  items={paginatedResidents.map((resident) => ({
                     key: resident.id,
                     className: cn(
                       resident.status === 'Pending Approval' && 'border-l-4 border-l-warning bg-warning/10',
@@ -462,7 +464,7 @@ const ResidentsPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(residentsExpanded ? filteredResidents : filteredResidents.slice(0, RESIDENTS_DEFAULT_VISIBLE)).map((resident) => (
+                  {paginatedResidents.map((resident) => (
                     <TableRow 
                       key={resident.id}
                       ref={highlightedResidentId === resident.id ? highlightRef : undefined}
@@ -529,16 +531,14 @@ const ResidentsPage: React.FC = () => {
                 </TableBody>
               </Table>
               </div>
-              {filteredResidents.length > RESIDENTS_DEFAULT_VISIBLE && (
-                <div className="flex justify-center pt-4">
-                  <Button variant="ghost" size="sm" onClick={() => setResidentsExpanded(!residentsExpanded)}>
-                    {residentsExpanded ? 'Show Less' : `View More (${filteredResidents.length - RESIDENTS_DEFAULT_VISIBLE} more)`}
-                  </Button>
-                </div>
-              )}
-              <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
-                <span>Showing {residentsExpanded ? filteredResidents.length : Math.min(RESIDENTS_DEFAULT_VISIBLE, filteredResidents.length)} of {residents.length} Results</span>
-              </div>
+              <PaginationControls
+                currentPage={resPage}
+                totalPages={resTotalPages}
+                onPageChange={goToResPage}
+                startIndex={resStart}
+                endIndex={resEnd}
+                totalItems={resTotal}
+              />
             </TabsContent>
 
             <TabsContent value="trash">

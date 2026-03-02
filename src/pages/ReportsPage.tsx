@@ -1,20 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import MobileCardList from '@/components/MobileCardList';
+import ReportsLogContent from '@/components/ReportsLogContent';
 import { Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import Topbar from '@/components/Topbar';
 import DateFilter from '@/components/DateFilter';
 import { useData } from '@/context/DataContext';
-import { format } from 'date-fns';
 import { 
   BarChart, 
   Bar, 
@@ -35,8 +25,6 @@ const ReportsPage: React.FC = () => {
   const { requests, residents } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilters, setDateFilters] = useState<{ month: number | null; date: Date | null }>({ month: null, date: null });
-  const [logExpanded, setLogExpanded] = useState(false);
-  const LOG_DEFAULT_VISIBLE = 5;
   
   const approvedRequests = requests.filter(r => r.status === 'Approved');
   const requestsYTD = approvedRequests.length;
@@ -197,64 +185,7 @@ const ReportsPage: React.FC = () => {
           <CardTitle className="text-sm sm:text-base font-semibold">Certificate Issuance Log</CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-6">
-          {/* Mobile Card Layout */}
-          <div className="sm:hidden">
-            <MobileCardList
-              emptyMessage={searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
-              items={(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => ({
-                key: request.id,
-                fields: [
-                  { label: 'Resident', value: request.residentName },
-                  { label: 'Date Issued', value: request.dateProcessed ? format(new Date(request.dateProcessed), 'MMM dd, yyyy') : format(new Date(request.dateRequested), 'MMM dd, yyyy') },
-                  { label: 'Type', value: request.certificateType },
-                  { label: 'Purpose', value: request.purpose },
-                ],
-              }))}
-            />
-          </div>
-
-          {/* Desktop Table Layout */}
-          <div className="hidden sm:block overflow-auto scrollbar-hide">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs px-4">DATE ISSUED</TableHead>
-                <TableHead className="text-xs px-4">TYPE</TableHead>
-                <TableHead className="text-xs px-4">RESIDENT</TableHead>
-                <TableHead className="text-xs px-4">PURPOSE</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(logExpanded ? filteredApprovedRequests : filteredApprovedRequests.slice(0, LOG_DEFAULT_VISIBLE)).map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell className="text-sm px-4 py-4">
-                    {request.dateProcessed 
-                      ? format(new Date(request.dateProcessed), 'MMM dd, yyyy')
-                      : format(new Date(request.dateRequested), 'MMM dd, yyyy')
-                    }
-                  </TableCell>
-                  <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
-                  <TableCell className="text-sm px-4 py-4">{request.residentName}</TableCell>
-                  <TableCell className="text-sm px-4 py-4">{request.purpose}</TableCell>
-                </TableRow>
-              ))}
-              {filteredApprovedRequests.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8 text-sm">
-                    {searchQuery ? 'No matching certificates found.' : 'No certificates issued yet.'}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
-          {filteredApprovedRequests.length > LOG_DEFAULT_VISIBLE && (
-            <div className="flex justify-center pt-4">
-              <Button variant="ghost" size="sm" onClick={() => setLogExpanded(!logExpanded)}>
-                {logExpanded ? 'Show Less' : `View More (${filteredApprovedRequests.length - LOG_DEFAULT_VISIBLE} more)`}
-              </Button>
-            </div>
-          )}
+          <ReportsLogContent requests={filteredApprovedRequests} searchQuery={searchQuery} />
         </CardContent>
       </Card>
     </div>
