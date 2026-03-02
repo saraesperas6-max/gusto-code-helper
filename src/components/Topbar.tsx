@@ -87,10 +87,10 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
                      }`}
                      onClick={() => {
                        markNotificationRead(notif.id);
-                       if (notif.id.startsWith('resident-')) {
-                         const residentId = notif.id.replace('resident-', '');
-                         navigate(`/dashboard/residents?highlightResident=${residentId}`);
-                       } else if (notif.requestId) {
+                        if (notif.id.startsWith('resident-')) {
+                          const residentId = notif.id.replace('resident-', '');
+                          navigate(`/dashboard/residents?highlightResident=${residentId}&openProfile=true`);
+                        } else if (notif.requestId) {
                          navigate(`/dashboard/requests?highlight=${notif.requestId}`);
                        }
                      }}

@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client'; // kept for potential
 import { Resident } from '@/types/barangay';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 const ResidentsPage: React.FC = () => {
   const { residents, trashedResidents, addResident, updateResident, softDeleteResident, restoreResident, permanentlyDeleteResident, approveResident } = useData();
@@ -43,13 +44,21 @@ const ResidentsPage: React.FC = () => {
   const [highlightedResidentId, setHighlightedResidentId] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [residentsExpanded, setResidentsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('active');
   const RESIDENTS_DEFAULT_VISIBLE = 5;
+
+  const [notificationResidentId, setNotificationResidentId] = useState<string | null>(null);
 
   // Handle highlight from notification click
   useEffect(() => {
     const residentId = searchParams.get('highlightResident');
+    const openProfile = searchParams.get('openProfile');
     if (residentId) {
       setHighlightedResidentId(residentId);
+      if (openProfile === 'true') {
+        setNotificationResidentId(residentId);
+        setActiveTab('profiles');
+      }
       setSearchParams({}, { replace: true });
       // Clear highlight after animation
       const timer = setTimeout(() => setHighlightedResidentId(null), 3000);
@@ -103,7 +112,8 @@ const ResidentsPage: React.FC = () => {
         return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth() && rd.getDate() === d.getDate();
       });
     }
-    return result.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+    // Sort newest first by registration date
+    return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [residents, searchTerm, dateFilters]);
 
   const filteredTrashedResidents = useMemo(() => {
@@ -198,7 +208,24 @@ const ResidentsPage: React.FC = () => {
   const handleApprove = async (id: string) => {
     try {
       await approveResident(id);
-      toast({ title: 'Resident approved' });
+      toast({ title: 'Resident approved successfully' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSoftDeleteWithUndo = async (resident: Resident) => {
+    try {
+      await softDeleteResident(resident.id);
+      toast({
+        title: 'Resident moved to Trash Bin',
+        description: `${resident.firstName} ${resident.lastName} was moved to trash.`,
+        action: (
+          <ToastAction altText="Undo" onClick={() => handleRestore(resident.id)}>
+            <RotateCcw className="h-3 w-3 mr-1" /> Undo
+          </ToastAction>
+        ),
+      });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
@@ -343,7 +370,7 @@ const ResidentsPage: React.FC = () => {
           </Dialog>
         </CardHeader>
         <CardContent className="p-2 sm:p-6">
-          <Tabs defaultValue="active">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-3 sm:mb-4">
               <TabsTrigger value="active" className="text-[10px] sm:text-sm px-2 sm:px-3">Active Residents</TabsTrigger>
               <TabsTrigger value="profiles" className="text-[10px] sm:text-sm px-2 sm:px-3">
@@ -377,9 +404,23 @@ const ResidentsPage: React.FC = () => {
                     actions: (
                       <div className="flex items-center gap-1 flex-wrap">
                         {resident.status === 'Pending Approval' && (
-                          <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs" onClick={() => handleApprove(resident.id)}>
-                            <Check className="h-3 w-3 mr-1" />Approve
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" className="bg-success hover:bg-success/90 h-7 text-xs">
+                                <Check className="h-3 w-3 mr-1" />Approve
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Approve Resident?</AlertDialogTitle>
+                                <AlertDialogDescription>Approve <strong>{resident.firstName} {resident.lastName}</strong>? They will gain portal access and receive an email notification.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-success text-primary-foreground hover:bg-success/90" onClick={() => handleApprove(resident.id)}>Approve</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openEditModal(resident)}>
                           <Edit className="h-3 w-3 mr-1" />Edit
@@ -387,7 +428,7 @@ const ResidentsPage: React.FC = () => {
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 text-xs">
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3 mr-1" />Delete
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -397,7 +438,7 @@ const ResidentsPage: React.FC = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDelete(resident.id)}>Delete</AlertDialogAction>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDeleteWithUndo(resident)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -440,14 +481,28 @@ const ResidentsPage: React.FC = () => {
                       <TableCell className="px-4 py-4">
                         <div className="flex items-center justify-center gap-2">
                           {resident.status === 'Pending Approval' && (
-                            <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleApprove(resident.id)}>
-                              <Check className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" className="bg-success hover:bg-success/90" title="Approve">
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Approve Resident?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will approve <strong>{resident.firstName} {resident.lastName}</strong> and grant them access to the resident portal. An email notification will be sent.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-success text-primary-foreground hover:bg-success/90" onClick={() => handleApprove(resident.id)}>Approve</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                           {renderEditDialog(resident)}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" title="Move to Trash">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -458,7 +513,7 @@ const ResidentsPage: React.FC = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDelete(resident.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleSoftDeleteWithUndo(resident)}>Delete</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -585,6 +640,8 @@ const ResidentsPage: React.FC = () => {
               <AdminResidentProfile
                 residents={fullProfiles}
                 onProfileUpdated={() => { /* data refreshes via realtime */ }}
+                autoOpenResidentId={notificationResidentId}
+                onAutoOpenHandled={() => setNotificationResidentId(null)}
               />
             </TabsContent>
           </Tabs>
