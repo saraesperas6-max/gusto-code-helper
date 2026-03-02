@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import PaginationControls from '@/components/PaginationControls';
+import { usePagination } from '@/hooks/use-pagination';
 import { 
   Clock, 
   CheckCircle, 
@@ -135,8 +137,6 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   // Combine request activities + login/logout logs
-  const [activityExpanded, setActivityExpanded] = useState(false);
-  const DEFAULT_VISIBLE = 5;
 
   const recentActivities = useMemo(() => {
     const requestActivities = requests.slice(0, 5).map(r => ({
@@ -168,7 +168,7 @@ const DashboardPage: React.FC = () => {
       .sort((a, b) => b.time - a.time);
   }, [requests, activityLogs, residents]);
 
-  const visibleActivities = activityExpanded ? recentActivities : recentActivities.slice(0, DEFAULT_VISIBLE);
+  const { paginatedItems: visibleActivities, currentPage: activityPage, totalPages: activityTotalPages, goToPage: goToActivityPage, startIndex: activityStart, endIndex: activityEnd, totalItems: activityTotal } = usePagination(recentActivities);
 
   const openApproveDialog = (id: string) => {
     setApproveTargetId(id);
@@ -393,13 +393,14 @@ const DashboardPage: React.FC = () => {
               </div>
             ))}
           </div>
-          {recentActivities.length > DEFAULT_VISIBLE && (
-            <div className="flex justify-center pt-4">
-              <Button variant="ghost" size="sm" onClick={() => setActivityExpanded(!activityExpanded)}>
-                {activityExpanded ? 'Show Less' : `View More (${recentActivities.length - DEFAULT_VISIBLE} more)`}
-              </Button>
-            </div>
-          )}
+          <PaginationControls
+            currentPage={activityPage}
+            totalPages={activityTotalPages}
+            onPageChange={goToActivityPage}
+            startIndex={activityStart}
+            endIndex={activityEnd}
+            totalItems={activityTotal}
+          />
         </CardContent>
       </Card>
 

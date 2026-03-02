@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Eye, Check, X, Undo2, FileText, User, MapPin, Phone, Mail, Calendar } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileCardList from '@/components/MobileCardList';
+import PaginationControls from '@/components/PaginationControls';
+import { usePagination } from '@/hooks/use-pagination';
 import CertificatePreview from '@/components/CertificatePreview';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,8 +61,6 @@ const RequestsPage: React.FC = () => {
   const [approveTargetId, setApproveTargetId] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
-  const [requestsExpanded, setRequestsExpanded] = useState(false);
-  const REQUESTS_DEFAULT_VISIBLE = 5;
   const statusUpdateLockRef = useRef<Set<string>>(new Set());
   const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
 
@@ -110,6 +110,8 @@ const RequestsPage: React.FC = () => {
     }
     return result.sort((a, b) => new Date(b.dateRequested).getTime() - new Date(a.dateRequested).getTime());
   }, [requests, searchTerm, dateFilters]);
+
+  const { paginatedItems: paginatedRequests, currentPage: reqPage, totalPages: reqTotalPages, goToPage: goToReqPage, startIndex: reqStart, endIndex: reqEnd, totalItems: reqTotal } = usePagination(filteredRequests);
 
   const activeResidents = residents.filter((r) => r.status === 'Active');
 
@@ -404,7 +406,7 @@ const RequestsPage: React.FC = () => {
           <div className="sm:hidden">
             <MobileCardList
               emptyMessage="No requests found."
-              items={(requestsExpanded ? filteredRequests : filteredRequests.slice(0, REQUESTS_DEFAULT_VISIBLE)).map((request) => ({
+              items={paginatedRequests.map((request) => ({
                 key: request.id,
                 className: request.id === highlightedId ? 'animate-pulse bg-primary/10 ring-2 ring-primary/30' : '',
                 fields: [
@@ -463,7 +465,7 @@ const RequestsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(requestsExpanded ? filteredRequests : filteredRequests.slice(0, REQUESTS_DEFAULT_VISIBLE)).map((request) => (
+              {paginatedRequests.map((request) => (
                 <TableRow
                   key={request.id}
                   ref={request.id === highlightedId ? highlightRowRef : undefined}
@@ -581,13 +583,14 @@ const RequestsPage: React.FC = () => {
             </TableBody>
           </Table>
           </div>
-          {filteredRequests.length > REQUESTS_DEFAULT_VISIBLE && (
-            <div className="flex justify-center pt-4">
-              <Button variant="ghost" size="sm" onClick={() => setRequestsExpanded(!requestsExpanded)}>
-                {requestsExpanded ? 'Show Less' : `View More (${filteredRequests.length - REQUESTS_DEFAULT_VISIBLE} more)`}
-              </Button>
-            </div>
-          )}
+          <PaginationControls
+            currentPage={reqPage}
+            totalPages={reqTotalPages}
+            onPageChange={goToReqPage}
+            startIndex={reqStart}
+            endIndex={reqEnd}
+            totalItems={reqTotal}
+          />
         </CardContent>
       </Card>
 

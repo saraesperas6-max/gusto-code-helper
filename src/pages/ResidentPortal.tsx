@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Upload, X, FileText, Sun, Moon, Eye, Pencil, XCircle, Trash2, RotateCcw, Trash, ShieldCheck, Home, Users, Coins, FileSignature, Briefcase } from 'lucide-react';
 import PersonalInformation from '@/components/PersonalInformation';
 import MobileCardList from '@/components/MobileCardList';
+import PaginationControls from '@/components/PaginationControls';
+import { usePagination } from '@/hooks/use-pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -93,16 +95,16 @@ const ResidentPortal: React.FC = () => {
   const [previewRequest, setPreviewRequest] = useState<CertificateRequest | null>(null);
   const { toast } = useToast();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [showAllRequests, setShowAllRequests] = useState(false);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-  if (!profile || !user) return null;
+  const residentName = profile && user ? `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim() : '';
+  const myRequests = profile && user ? getResidentRequests(user.id) : [];
+  const myTrashedRequests = profile && user ? getTrashedRequests(user.id) : [];
+  const { paginatedItems: paginatedMyRequests, currentPage: myReqPage, totalPages: myReqTotalPages, goToPage: goToMyReqPage, startIndex: myReqStart, endIndex: myReqEnd, totalItems: myReqTotal } = usePagination(myRequests);
 
-  const residentName = `${profile.first_name} ${profile.middle_name || ''} ${profile.last_name}`.trim();
-  const myRequests = getResidentRequests(user.id);
-  const myTrashedRequests = getTrashedRequests(user.id);
+  if (!profile || !user) return null;
 
   const handleLogout = async () => {
     await logout();
@@ -612,7 +614,7 @@ const ResidentPortal: React.FC = () => {
            <div className="sm:hidden">
              <MobileCardList
                emptyMessage="No requests yet. Apply for a certificate to get started!"
-               items={(showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => ({
+               items={paginatedMyRequests.map((request, index) => ({
                  key: request.id,
                  fields: [
                    { label: 'Type', value: request.certificateType },
@@ -662,7 +664,7 @@ const ResidentPortal: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {myRequests.length > 0 ? (
-                  (showAllRequests ? myRequests : myRequests.slice(0, 5)).map((request, index) => (
+                  paginatedMyRequests.map((request, index) => (
                     <TableRow key={request.id}>
                       <TableCell className="text-sm px-4 py-4">{index + 1}</TableCell>
                       <TableCell className="text-sm px-4 py-4">{request.certificateType}</TableCell>
@@ -693,13 +695,14 @@ const ResidentPortal: React.FC = () => {
               </TableBody>
              </Table>
             </div>
-            {myRequests.length > 5 && (
-              <div className="flex justify-center pt-3 pb-1">
-                <Button variant="ghost" size="sm" onClick={() => setShowAllRequests(prev => !prev)} className="text-primary">
-                  {showAllRequests ? 'Show Less' : `View All (${myRequests.length})`}
-                </Button>
-              </div>
-            )}
+            <PaginationControls
+              currentPage={myReqPage}
+              totalPages={myReqTotalPages}
+              onPageChange={goToMyReqPage}
+              startIndex={myReqStart}
+              endIndex={myReqEnd}
+              totalItems={myReqTotal}
+            />
 
             {/* View Submitted Request Dialog */}
             <Dialog open={!!viewingRequest} onOpenChange={(open) => { if (!open) setViewingRequest(null); }}>
