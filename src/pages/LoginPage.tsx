@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
-import GoogleReCaptcha from '@/components/GoogleReCaptcha';
+import AlphanumericCaptcha from '@/components/AlphanumericCaptcha';
 import logo from '@/assets/logo.png';
 
 const LoginPage: React.FC = () => {
@@ -203,7 +203,7 @@ const LoginPage: React.FC = () => {
                     <button type="button" className="text-xs hover:underline" style={{ color: 'hsl(170, 55%, 45%)' }} onClick={() => { setShowForgotPassword(true); setError(''); setSuccess(''); }}>Forgot Password?</button>
                   </div>
 
-                  <GoogleReCaptcha onVerified={setCaptchaVerified} />
+                  <AlphanumericCaptcha onVerified={setCaptchaVerified} />
 
                   {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                   {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
