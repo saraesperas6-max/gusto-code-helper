@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface GoogleReCaptchaProps {
-  onVerified: (verified: boolean) => void;
+  onVerified: (verified: boolean, token?: string) => void;
 }
 
 declare global {
@@ -67,7 +67,7 @@ const GoogleReCaptcha: React.FC<GoogleReCaptchaProps> = ({ onVerified }) => {
             setError('Verification failed. Please try again.');
             if (widgetIdRef.current !== null) window.grecaptcha.reset(widgetIdRef.current);
           } else {
-            onVerified(true);
+            onVerified(true, token);
             setError('');
           }
         } catch {
