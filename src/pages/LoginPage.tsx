@@ -34,6 +34,7 @@ const LoginPage: React.FC = () => {
   const [contact, setContact] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
   const [signupCaptchaVerified, setSignupCaptchaVerified] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,7 +45,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     setLoading(true);
-    const { error } = await login(email, password);
+    const { error } = await login(email, password, captchaToken);
     setLoading(false);
     if (error) setError(error);
   };
@@ -120,7 +121,7 @@ const LoginPage: React.FC = () => {
     setError(''); setSuccess(''); setEmail(''); setPassword('');
     setFirstName(''); setLastName(''); setMiddleName(''); setAge('');
     setAddress(''); setContact(''); setShowForgotPassword(false);
-    setCaptchaVerified(false); setSignupCaptchaVerified(false); setForgotSent(false); setForgotEmail('');
+    setCaptchaVerified(false); setCaptchaToken(undefined); setSignupCaptchaVerified(false); setForgotSent(false); setForgotEmail('');
     setConfirmPassword('');
   };
 
@@ -208,7 +209,7 @@ const LoginPage: React.FC = () => {
                     <button type="button" className="text-xs hover:underline" style={{ color: 'hsl(170, 55%, 45%)' }} onClick={() => { setShowForgotPassword(true); setError(''); setSuccess(''); }}>Forgot Password?</button>
                   </div>
 
-                  <GoogleReCaptcha onVerified={setCaptchaVerified} />
+                  <GoogleReCaptcha onVerified={(verified, token) => { setCaptchaVerified(verified); setCaptchaToken(token); }} />
 
                   {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                   {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
