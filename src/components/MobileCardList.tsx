@@ -55,4 +55,4 @@ const MobileCardList: React.FC<MobileCardListProps> = ({ items, emptyMessage = '
   );
 };
 
-export default MobileCardList;
+export default React.memo(MobileCardList);

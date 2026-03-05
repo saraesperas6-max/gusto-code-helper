@@ -137,4 +137,4 @@ const Topbar: React.FC<TopbarProps> = ({ searchPlaceholder = "Search...", onSear
   );
 };
 
-export default Topbar;
+export default React.memo(Topbar);

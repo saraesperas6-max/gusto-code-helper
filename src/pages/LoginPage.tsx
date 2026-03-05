@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
-import Captcha from '@/components/Captcha';
+import GoogleReCaptcha from '@/components/GoogleReCaptcha';
 import logo from '@/assets/logo.png';
 
 const LoginPage: React.FC = () => {
@@ -208,7 +208,7 @@ const LoginPage: React.FC = () => {
                     <button type="button" className="text-xs hover:underline" style={{ color: 'hsl(170, 55%, 45%)' }} onClick={() => { setShowForgotPassword(true); setError(''); setSuccess(''); }}>Forgot Password?</button>
                   </div>
 
-                  <Captcha onVerified={setCaptchaVerified} />
+                  <GoogleReCaptcha onVerified={setCaptchaVerified} />
 
                   {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                   {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
@@ -304,7 +304,7 @@ const LoginPage: React.FC = () => {
                   <Input type={showPassword ? 'text' : 'password'} placeholder="Confirm Password *" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10" required />
                 </div>
 
-                <Captcha onVerified={setSignupCaptchaVerified} />
+                <GoogleReCaptcha onVerified={setSignupCaptchaVerified} />
 
                 {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                 {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}

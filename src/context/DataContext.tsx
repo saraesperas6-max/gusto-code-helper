@@ -127,23 +127,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user || !userRole) return;
 
     try {
-      // Fetch profiles
-      const profilesQuery = supabase.from('profiles').select('*');
-      // Fetch active requests
-      const activeReqQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
-      // Fetch trashed requests
-      const trashedReqQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
-
-      // Run all three queries in parallel
+      // Run all three queries in parallel for maximum speed
       const [profilesResult, requestsResult, trashedResult] = await Promise.all([
-        profilesQuery,
-        activeReqQuery,
-        trashedReqQuery,
+        supabase.from('profiles').select('*'),
+        supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false }),
+        supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
       ]);
 
       const profiles = (profilesResult.data || []) as unknown as Profile[];
       const profileMap: Record<string, Profile> = {};
-      profiles.forEach((p) => { profileMap[p.user_id] = p; });
+      for (let i = 0; i < profiles.length; i++) {
+        profileMap[profiles[i].user_id] = profiles[i];
+      }
       profileMapRef.current = profileMap;
 
       const activeProfiles = profiles.filter((p) => !(p as any).deleted_at);
