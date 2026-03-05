@@ -118,7 +118,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const secret = Deno.env.get('CAPTCHA_HMAC_SECRET') || 'image-captcha-default-secret-key-2024';
+  const secret = Deno.env.get('CAPTCHA_HMAC_SECRET');
+  if (!secret) {
+    return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   if (req.method === 'GET') {
     const categoryNames = Object.keys(categories);
