@@ -49,15 +49,11 @@ const GoogleReCaptcha: React.FC<GoogleReCaptchaProps> = ({ onVerified }) => {
 
   const renderWidget = useCallback(() => {
     if (!containerRef.current || !siteKey || !window.grecaptcha?.render) return;
-    // Clear previous widget
-    if (widgetIdRef.current !== null) {
-      try { window.grecaptcha.reset(widgetIdRef.current); } catch {}
-    }
-    containerRef.current.innerHTML = '';
+    // Don't render if already rendered
+    if (widgetIdRef.current !== null) return;
     widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
       sitekey: siteKey,
       callback: async (token: string) => {
-        // Verify token server-side
         try {
           const { data, error } = await supabase.functions.invoke('verify-recaptcha', {
             body: { token },
@@ -124,6 +120,10 @@ const GoogleReCaptcha: React.FC<GoogleReCaptchaProps> = ({ onVerified }) => {
       // Cleanup widget on unmount
       if (widgetIdRef.current !== null && window.grecaptcha?.reset) {
         try { window.grecaptcha.reset(widgetIdRef.current); } catch {}
+        widgetIdRef.current = null;
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
       }
     };
   }, [siteKey, renderWidget]);
