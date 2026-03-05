@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
-import AlphanumericCaptcha from '@/components/AlphanumericCaptcha';
+import Captcha from '@/components/Captcha';
 import logo from '@/assets/logo.png';
 
 const LoginPage: React.FC = () => {
@@ -34,6 +34,7 @@ const LoginPage: React.FC = () => {
   const [contact, setContact] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [signupCaptchaVerified, setSignupCaptchaVerified] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +53,10 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    if (!signupCaptchaVerified) {
+      setError('Please complete the verification first.');
+      return;
+    }
     if (!firstName || !lastName || !age || !address || !contact || !email || !password) {
       setError('Please fill in all required fields.');
       return;
@@ -115,7 +120,7 @@ const LoginPage: React.FC = () => {
     setError(''); setSuccess(''); setEmail(''); setPassword('');
     setFirstName(''); setLastName(''); setMiddleName(''); setAge('');
     setAddress(''); setContact(''); setShowForgotPassword(false);
-    setCaptchaVerified(false); setForgotSent(false); setForgotEmail('');
+    setCaptchaVerified(false); setSignupCaptchaVerified(false); setForgotSent(false); setForgotEmail('');
     setConfirmPassword('');
   };
 
@@ -203,7 +208,7 @@ const LoginPage: React.FC = () => {
                     <button type="button" className="text-xs hover:underline" style={{ color: 'hsl(170, 55%, 45%)' }} onClick={() => { setShowForgotPassword(true); setError(''); setSuccess(''); }}>Forgot Password?</button>
                   </div>
 
-                  <AlphanumericCaptcha onVerified={setCaptchaVerified} />
+                  <Captcha onVerified={setCaptchaVerified} />
 
                   {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                   {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
@@ -298,6 +303,8 @@ const LoginPage: React.FC = () => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input type={showPassword ? 'text' : 'password'} placeholder="Confirm Password *" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10" required />
                 </div>
+
+                <Captcha onVerified={setSignupCaptchaVerified} />
 
                 {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                 {success && <Alert><AlertDescription className="text-primary">{success}</AlertDescription></Alert>}
