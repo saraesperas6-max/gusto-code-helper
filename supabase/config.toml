@@ -3,5 +3,3 @@ project_id = "orkhzcxtutbzoggbvlrr"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
-  [functions.login-with-captcha]
-    verify_jwt = false

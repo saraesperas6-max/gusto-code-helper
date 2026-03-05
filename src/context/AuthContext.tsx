@@ -27,7 +27,7 @@ interface AuthContextType {
   userRole: UserRole | null;
   isAdmin: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, captchaToken?: string) => Promise<{ error: string | null }>;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   registerResident: (data: {
     email: string;
@@ -89,25 +89,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => subscription.unsubscribe();
   }, [fetchProfileAndRole]);
 
-  const login = async (email: string, password: string, captchaToken?: string) => {
-    if (!captchaToken) {
-      return { error: 'CAPTCHA verification is required.' };
-    }
-    // Server-side login with CAPTCHA verification
-    const { data, error } = await supabase.functions.invoke('login-with-captcha', {
-      body: { email, password, captchaToken },
-    });
-    if (error || data?.error) {
-      return { error: data?.error || error?.message || 'Login failed.' };
-    }
-    // Set the session from the server response
-    if (data?.session) {
-      await supabase.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-    }
-    return { error: null };
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message || null };
   };
 
   const logout = async () => {

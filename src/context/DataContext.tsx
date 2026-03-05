@@ -127,18 +127,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user || !userRole) return;
 
     try {
-      // Run all three queries in parallel for maximum speed
+      // Fetch profiles
+      const profilesQuery = supabase.from('profiles').select('*');
+      // Fetch active requests
+      const activeReqQuery = supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false });
+      // Fetch trashed requests
+      const trashedReqQuery = supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+
+      // Run all three queries in parallel
       const [profilesResult, requestsResult, trashedResult] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('certificate_requests').select('*').is('deleted_at', null).order('date_requested', { ascending: false }),
-        supabase.from('certificate_requests').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
+        profilesQuery,
+        activeReqQuery,
+        trashedReqQuery,
       ]);
 
       const profiles = (profilesResult.data || []) as unknown as Profile[];
       const profileMap: Record<string, Profile> = {};
-      for (let i = 0; i < profiles.length; i++) {
-        profileMap[profiles[i].user_id] = profiles[i];
-      }
+      profiles.forEach((p) => { profileMap[p.user_id] = p; });
       profileMapRef.current = profileMap;
 
       const activeProfiles = profiles.filter((p) => !(p as any).deleted_at);
@@ -168,24 +173,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, userRole, fetchData]);
 
-  // Realtime subscriptions for live updates (debounced to reduce redundant fetches)
+  // Realtime subscriptions for live updates
   useEffect(() => {
     if (!user || !userRole) return;
 
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const debouncedFetch = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => fetchData(), 300);
-    };
-
     const channel = supabase
       .channel('data-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, debouncedFetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificate_requests' }, () => {
+        fetchData();
+      })
       .subscribe();
 
     return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [user, userRole, fetchData]);

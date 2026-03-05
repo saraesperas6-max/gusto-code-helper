@@ -1,151 +1,102 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from '@/context/ThemeContext';
 
 interface GoogleReCaptchaProps {
-  onVerified: (verified: boolean, token?: string) => void;
+  onVerified: (verified: boolean) => void;
 }
-
-declare global {
-  interface Window {
-    grecaptcha: any;
-    onRecaptchaLoad: () => void;
-  }
-}
-
-const RECAPTCHA_SCRIPT_ID = 'recaptcha-script';
 
 const GoogleReCaptcha: React.FC<GoogleReCaptchaProps> = ({ onVerified }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<number | null>(null);
-  const [siteKey, setSiteKey] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const { theme } = useTheme();
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [siteKey, setSiteKey] = useState('');
 
-  // Fetch site key from edge function
   useEffect(() => {
-    let cancelled = false;
+    // Fetch the site key from the edge function secrets
     const fetchSiteKey = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('verify-recaptcha', {
           body: { action: 'get-site-key' },
         });
-        if (cancelled) return;
-        if (error || !data?.siteKey) {
-          setError('Failed to load CAPTCHA configuration.');
-          setLoading(false);
-          return;
+        if (data?.siteKey) {
+          setSiteKey(data.siteKey);
         }
-        setSiteKey(data.siteKey);
       } catch {
-        if (!cancelled) {
-          setError('Failed to load CAPTCHA.');
-          setLoading(false);
-        }
+        // Fallback: site key should be set via env
       }
     };
     fetchSiteKey();
-    return () => { cancelled = true; };
   }, []);
 
-  const renderWidget = useCallback(() => {
-    if (!containerRef.current || !siteKey || !window.grecaptcha?.render) return;
-    // Don't render if already rendered
-    if (widgetIdRef.current !== null) return;
-    widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
-      sitekey: siteKey,
-      callback: async (token: string) => {
-        try {
-          const { data, error } = await supabase.functions.invoke('verify-recaptcha', {
-            body: { token },
-          });
-          if (error || !data?.success) {
-            onVerified(false);
-            setError('Verification failed. Please try again.');
-            if (widgetIdRef.current !== null) window.grecaptcha.reset(widgetIdRef.current);
-          } else {
-            onVerified(true, token);
-            setError('');
-          }
-        } catch {
-          onVerified(false);
-          setError('Verification error.');
-        }
-      },
-      'expired-callback': () => {
-        onVerified(false);
-      },
-      'error-callback': () => {
-        onVerified(false);
-        setError('CAPTCHA error. Please try again.');
-      },
-    });
-    setLoading(false);
-  }, [siteKey, onVerified]);
-
-  // Load reCAPTCHA script & render widget
-  useEffect(() => {
-    if (!siteKey) return;
-
-    const tryRender = () => {
-      if (window.grecaptcha?.render) {
-        renderWidget();
-      }
-    };
-
-    // If script already loaded
-    if (document.getElementById(RECAPTCHA_SCRIPT_ID)) {
-      if (window.grecaptcha?.render) {
-        renderWidget();
-      } else {
-        // Script is loading, wait for it
-        const prev = window.onRecaptchaLoad;
-        window.onRecaptchaLoad = () => {
-          prev?.();
-          tryRender();
-        };
-      }
+  const handleChange = useCallback(async (token: string | null) => {
+    if (!token) {
+      onVerified(false);
       return;
     }
 
-    // Load script
-    window.onRecaptchaLoad = tryRender;
-    const script = document.createElement('script');
-    script.id = RECAPTCHA_SCRIPT_ID;
-    script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+    setLoading(true);
+    setError('');
 
-    return () => {
-      // Cleanup widget on unmount
-      if (widgetIdRef.current !== null && window.grecaptcha?.reset) {
-        try { window.grecaptcha.reset(widgetIdRef.current); } catch {}
-        widgetIdRef.current = null;
-      }
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-    };
-  }, [siteKey, renderWidget]);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('verify-recaptcha', {
+        body: { token },
+      });
 
-  // Reset verified state on mount
-  useEffect(() => {
+      if (fnError) throw fnError;
+
+      if (data?.success) {
+        onVerified(true);
+      } else {
+        setError('Verification failed. Please try again.');
+        onVerified(false);
+        recaptchaRef.current?.reset();
+      }
+    } catch {
+      setError('Verification failed. Please try again.');
+      onVerified(false);
+      recaptchaRef.current?.reset();
+    } finally {
+      setLoading(false);
+    }
+  }, [onVerified]);
+
+  const handleExpired = useCallback(() => {
     onVerified(false);
-  }, []);
+  }, [onVerified]);
 
-  if (error && !siteKey) {
-    return <p className="text-xs text-center text-destructive">{error}</p>;
+  const handleError = useCallback(() => {
+    setError('reCAPTCHA error. Please try again.');
+    onVerified(false);
+  }, [onVerified]);
+
+  if (!siteKey) {
+    return (
+      <div className="flex justify-center py-2">
+        <div className="text-xs text-muted-foreground">Loading CAPTCHA...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-center">
-        {loading && <p className="text-xs text-muted-foreground">Loading verification...</p>}
-        <div ref={containerRef} />
+    <div className="space-y-1">
+      <div className="flex justify-center transform scale-[0.85] sm:scale-90 md:scale-100 origin-center">
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          sitekey={siteKey}
+          onChange={handleChange}
+          onExpired={handleExpired}
+          onErrored={handleError}
+          theme={theme === 'dark' ? 'dark' : 'light'}
+          size="normal"
+        />
       </div>
       {error && <p className="text-xs text-center text-destructive">{error}</p>}
+      {loading && <p className="text-xs text-center text-muted-foreground">Verifying...</p>}
     </div>
   );
 };
 
-export default React.memo(GoogleReCaptcha);
+export default GoogleReCaptcha;

@@ -296,4 +296,4 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({ request, open, 
   );
 };
 
-export default React.memo(CertificatePreview);
+export default CertificatePreview;

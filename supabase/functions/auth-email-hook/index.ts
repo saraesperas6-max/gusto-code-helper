@@ -36,9 +36,9 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "gusto-code-helper"
-const SENDER_DOMAIN = "notify.palmaurbano.it.com"
-const ROOT_DOMAIN = "palmaurbano.it.com"
-const FROM_DOMAIN = "palmaurbano.it.com" // Domain shown in From address (may be root or sender subdomain)
+const SENDER_DOMAIN = "notify.barangaypalmaurbano.com"
+const ROOT_DOMAIN = "barangaypalmaurbano.com"
+const FROM_DOMAIN = "barangaypalmaurbano.com" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
